@@ -1,0 +1,40 @@
+{
+  "framework": "nextjs",
+  "functions": {
+    "app/api/kundli-report/webhook/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/razorpay/reading-webhook/route.js": {
+      "maxDuration": 30
+    },
+    "app/api/booking/razorpay-webhook/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/booking/form/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/youtube/cron/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/newsletter/daily/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/cron/cleanup-accounts/route.js": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/newsletter/daily",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/youtube/cron",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-accounts",
+      "schedule": "0 21 * * *"
+    }
+  ]
+}

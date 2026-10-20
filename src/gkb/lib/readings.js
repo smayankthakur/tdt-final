@@ -1,0 +1,40 @@
+// Every reading topic pulls straight from its dedicated source JSON below —
+// nothing in this app edits or rewrites these files. Swap any of them out
+// with your real/updated file (same filename, same {"Card Name": "text"}
+// shape) and the app picks it up automatically.
+import partnerFeelings from "@/gkb/data/Partner_Current_Feelings_Edited_Version__Final_Draft__-_31-12-2025.json";
+import partnerAction from "@/gkb/data/your_partner_action_done.json";
+import yesNo from "@/gkb/data/78_CARDS_YES_NO_NEW_WITH_GUIDIANCE.json";
+import thirdParty from "@/gkb/data/APKI_LIFE_SE_THIRD_PARTY_SITUATION_KAB_END_HOGI.json";
+import universeGuidance from "@/gkb/data/universe_guidance.json";
+import spiritualJourney from "@/gkb/data/spiritual_journey_of_all_cards_done.json";
+import monthly from "@/gkb/data/This_month_for_you_all_language_done.json";
+import babyKabHoga from "@/gkb/data/APKO_BABY_KAB_HOGA.json";
+import soulmateKabMilega from "@/gkb/data/APKO_SOULMATE_KAB_MILEGA.json";
+import relationshipPPF from "@/gkb/data/your_relationship_past_present_future.json";
+import unionKabHoga from "@/gkb/data/Apka_union_kab_hoga.json";
+import shaadiKabHogi from "@/gkb/data/Apki_shaadi_kab_hogi.json";
+import lifepartnerKabMilega from "@/gkb/data/APKO_APKA_LIFEPARTNER_KABMILEGA.json";
+// New topic (id 16, see lib/topics.js) — closes the career/job content gap.
+// Hinglish-only for now (getReadingFor's existing single-language fallback
+// handles English/Hindi requests gracefully, same as several original
+// cards already do); add English:/HINDI: sections to the source file
+// later to upgrade it, no code changes needed when you do.
+import careerGuidance from "@/gkb/data/career_guidance.json";
+
+export const READINGS = {
+  partnerFeelings,
+  partnerAction,
+  yesNo,
+  thirdParty,
+  universeGuidance,
+  spiritualJourney,
+  monthly,
+  babyKabHoga,
+  soulmateKabMilega,
+  relationshipPPF,
+  unionKabHoga,
+  shaadiKabHogi,
+  lifepartnerKabMilega,
+  careerGuidance,
+};
