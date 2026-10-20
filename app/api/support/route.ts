@@ -28,6 +28,12 @@ function decodeImage(dataUrl: unknown): { bytes: Buffer; mime: string; ext: stri
   if (!m) return 'bad';
   const bytes = Buffer.from(m[3], 'base64');
   if (bytes.length > MAX_IMAGE_BYTES) return 'bad';
+  // The declared type must match the file's real signature (magic bytes).
+  const sig =
+    m[2] === 'png' ? bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+    : m[2] === 'jpeg' ? bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
+    : bytes.subarray(0, 4).toString('ascii') === 'RIFF' && bytes.subarray(8, 12).toString('ascii') === 'WEBP';
+  if (!sig) return 'bad';
   return { bytes, mime: m[1], ext: m[2] === 'jpeg' ? 'jpg' : m[2] };
 }
 

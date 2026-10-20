@@ -15,8 +15,8 @@ export function LegalPage({ title, updated, intro, children }: { title: string; 
           {children}
         </div>
         <p className="mt-12 text-sm text-[#A1A1AA]">
-          Questions? Open a ticket on the <Link href="/support" className="text-[#FFD700] hover:underline">Support page</Link> or
-          write to <a href="mailto:thedivinetarot111@gmail.com" className="text-[#FFD700] hover:underline">thedivinetarot111@gmail.com</a>.
+          Questions? Open a ticket on the <Link href="/support" className="text-[#FFD700] underline underline-offset-2">Support page</Link> or
+          write to <a href="mailto:thedivinetarot111@gmail.com" className="text-[#FFD700] underline underline-offset-2">thedivinetarot111@gmail.com</a>.
         </p>
       </div>
     </div>

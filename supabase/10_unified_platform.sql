@@ -34,10 +34,12 @@ create table if not exists public.profiles (
   referred_by          uuid references public.profiles(id) on delete set null,
   referral_rewarded    boolean not null default false,
   legacy_id            text unique,          -- id from the old Prisma "User" table, if migrated
+  source               text not null default 'site', -- 'site' | 'legacy-chat' | 'legacy-reading' (cleanup only touches 'site')
   created_at           timestamptz not null default now(),
   updated_at           timestamptz not null default now()
 );
 create index if not exists idx_profiles_email on public.profiles (lower(email));
+alter table public.profiles add column if not exists source text not null default 'site';
 create index if not exists idx_profiles_unpaid on public.profiles (created_at) where subscription_expires is null;
 
 -- 8 characters, no 0/O/1/I so it can be read aloud.
@@ -72,6 +74,11 @@ language plpgsql security definer set search_path = public as $$
 declare
   v_ref uuid;
 begin
+  -- Anonymous sign-ins (used by the old chat app) and phone-only users get no
+  -- profile: the site's reading account needs an email.
+  if coalesce((to_jsonb(new)->>'is_anonymous')::boolean, false) or new.email is null then
+    return new;
+  end if;
   begin
     v_ref := nullif(new.raw_user_meta_data->>'referred_by', '')::uuid;
   exception when others then
@@ -97,11 +104,33 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Existing email/password users of this project (e.g. the old chat app) get a
+-- profile too, so they can log in on /reading with their current password.
+-- Any premium they already paid for on the old app carries over.
+do $$
+begin
+  if to_regclass('public.ginni_access') is not null then
+    insert into public.profiles (id, email, name, referral_code, source, subscription_expires, created_at)
+    select u.id, lower(u.email), nullif(trim(u.raw_user_meta_data->>'name'), ''), public.gen_referral_code(), 'legacy-chat',
+           case when g.premium_until > now() then g.premium_until end, u.created_at
+      from auth.users u
+      left join public.ginni_access g on g.user_id = u.id
+     where not coalesce((to_jsonb(u)->>'is_anonymous')::boolean, false) and u.email is not null
+    on conflict (id) do nothing;
+  else
+    insert into public.profiles (id, email, name, referral_code, source, created_at)
+    select u.id, lower(u.email), nullif(trim(u.raw_user_meta_data->>'name'), ''), public.gen_referral_code(), 'legacy-chat', u.created_at
+      from auth.users u
+     where not coalesce((to_jsonb(u)->>'is_anonymous')::boolean, false) and u.email is not null
+    on conflict (id) do nothing;
+  end if;
+end $$;
+
 -- Keep profiles.email in step if a user changes their email in Supabase Auth.
 create or replace function public.handle_user_email_change() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  if new.email is distinct from old.email then
+  if new.email is distinct from old.email and new.email is not null then
     update public.profiles set email = lower(new.email) where id = new.id;
   end if;
   return new;

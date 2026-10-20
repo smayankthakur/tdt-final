@@ -62,7 +62,7 @@ Razorpay dashboard → **Account & Settings → API Keys** (switch to Live mode 
 | `https://thedivinetarotonline.com/api/booking/razorpay-webhook` | `payment_link.paid` | `BOOKING_RAZORPAY_WEBHOOK_SECRET` |
 | `https://thedivinetarotonline.com/api/kundli-report/webhook` | `payment.captured` | `KUNDLI_RAZORPAY_WEBHOOK_SECRET` |
 
-Without the reading webhook, a buyer who closes the tab right after paying is only credited when they come back.
+Without the reading webhook, a buyer who closes the tab right after paying is not credited automatically and has to raise a support ticket.
 
 Course "Enrol Now" buttons use Razorpay payment links stored in `src/lib/courses/data.ts` — no env needed.
 
@@ -148,5 +148,5 @@ Analytics only load after a visitor clicks **Accept** on the cookie banner. The 
 ## After setting everything
 
 1. Redeploy in Vercel (`NEXT_PUBLIC_*` values are baked in at build time).
-2. Open `/personal-reading/admin` — the yellow "missing env" box lists anything still missing for bookings.
+2. Open `/personal-reading/admin` — the red "settings missing" warning lists anything still missing for Meet links and booking emails.
 3. Make a ₹1 test: temporarily set the pass price in `src/gkb/lib/pricing.js`, or use Razorpay test keys on a Preview deployment first.

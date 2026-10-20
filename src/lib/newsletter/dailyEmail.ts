@@ -103,7 +103,7 @@ export async function sendDailyEmailBatch(
     }));
 
     try {
-      const res = await fetch('https://api.resend.com/emails/batch', {
+      const res = await fetch('https://api.resend.com/emails/batch', { signal: AbortSignal.timeout(20000),
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,

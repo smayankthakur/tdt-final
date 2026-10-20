@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { createAuthClient } from "@/lib/supabase/server";
 import { authConfigured, getSessionUser, summarizeAccess } from "@/gkb/lib/auth";
+import { clientIp, hitLimit } from "@/lib/rateLimitDb";
 
 export async function POST(req) {
   if (!authConfigured()) {
@@ -10,6 +11,12 @@ export async function POST(req) {
   const { email, password } = await req.json().catch(() => ({}));
   if (!email || !password) {
     return NextResponse.json({ error: "Enter your email and password." }, { status: 400 });
+  }
+
+  // Brute-force guard: at most 10 attempts per email and 30 per IP every 15 minutes.
+  const normalized = String(email).trim().toLowerCase();
+  if ((await hitLimit(`login:email:${normalized}`, 10, 15 * 60)) || (await hitLimit(`login:ip:${clientIp(req)}`, 30, 15 * 60))) {
+    return NextResponse.json({ error: "Too many attempts. Please wait 15 minutes or reset your password." }, { status: 429 });
   }
 
   try {

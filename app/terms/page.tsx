@@ -18,8 +18,8 @@ export default function TermsPage() {
         <p>
           These terms apply to everything on thedivinetarotonline.com, run by The Divine Tarot (Bharti Singh). By using the site or
           paying for any service you agree to them. Please read the{' '}
-          <Link href="/refund-policy" className="text-[#FFD700] hover:underline">Refund &amp; Cancellation Policy</Link> and{' '}
-          <Link href="/privacy" className="text-[#FFD700] hover:underline">Privacy Policy</Link> as well.
+          <Link href="/refund-policy" className="text-[#FFD700] underline underline-offset-2">Refund &amp; Cancellation Policy</Link> and{' '}
+          <Link href="/privacy" className="text-[#FFD700] underline underline-offset-2">Privacy Policy</Link> as well.
         </p>
       }
     >
@@ -38,7 +38,7 @@ export default function TermsPage() {
           <li>One account is for one person. Your name is saved on the account and readings are personal to you; accounts may not be shared.</li>
           <li>Keep your password private. You are responsible for activity on your account.</li>
           <li>Accounts that never buy a pass are deleted automatically about 24 hours after sign-up.</li>
-          <li>You can ask us to delete your account at any time from the <Link href="/delete-account" className="text-[#FFD700] hover:underline">Delete your account</Link> page.</li>
+          <li>You can ask us to delete your account at any time from the <Link href="/delete-account" className="text-[#FFD700] underline underline-offset-2">Delete your account</Link> page.</li>
         </ul>
       </Section>
 

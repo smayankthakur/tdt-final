@@ -261,6 +261,7 @@ export default function KundliMilanPage() {
                   <div className="mx-auto flex max-w-md flex-col sm:flex-row gap-2 justify-center">
                     <input
                       type="email"
+                      aria-label="Email for the report"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
@@ -355,10 +356,10 @@ function Field({
   label: string; icon?: React.ReactNode; helper?: string; children: React.ReactNode;
 }) {
   return (
-    <div className="w-full min-w-0">
-      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gold/90">
+    <label className="block w-full min-w-0">
+      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gold/90">
         {label}
-      </label>
+      </span>
       <div className="relative min-w-0">
         {icon && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted pointer-events-none z-10">
@@ -367,8 +368,8 @@ function Field({
         )}
         {children}
       </div>
-      {helper && <p className="mt-1 text-xs text-foreground-muted italic">{helper}</p>}
-    </div>
+      {helper && <span className="mt-1 block text-xs text-foreground-muted italic">{helper}</span>}
+    </label>
   );
 }
 

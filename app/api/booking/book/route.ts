@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   }
   if (tier === "urgent") must(await sb().from("pr_orders").update({ held_slot: heldSlot }).eq("bid", bid));
   else must(await sb().from("pr_orders").insert({ bid, status: "created", tier, amount: priceFor(tier), held_slot: null, origin, created_at_ms: Date.now() }));
-  const r = await fetch("https://api.razorpay.com/v1/payment_links", {
+  const r = await fetch("https://api.razorpay.com/v1/payment_links", { signal: AbortSignal.timeout(20000),
     method: "POST", headers: { Authorization: razorpayAuth(), "Content-Type": "application/json" },
     body: JSON.stringify({
       amount: priceFor(tier) * 100, currency: "INR", accept_partial: false,

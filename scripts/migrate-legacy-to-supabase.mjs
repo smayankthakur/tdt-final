@@ -64,8 +64,29 @@ async function migrateReadingApp(target) {
       const email = String(u.email).trim().toLowerCase();
       const found = await target.query(`select id from auth.users where lower(email) = $1`, [email]);
       if (found.rows[0]) {
-        idMap.set(u.id, found.rows[0].id);
+        // Same email already has a login here (e.g. the old chat app): keep that
+        // login and password, and carry the reading-app pass and credits over.
+        const id = found.rows[0].id;
+        idMap.set(u.id, id);
         existing++;
+        if (COMMIT) {
+          await target.query(
+            `insert into public.profiles (id, email, name, referral_code, source)
+             values ($1, $2, $3, public.gen_referral_code(), 'legacy-reading') on conflict (id) do nothing`,
+            [id, email, u.name || null]
+          );
+          await target.query(
+            `update public.profiles set
+                name = coalesce(name, $2),
+                readings_used = greatest(readings_used, $3),
+                bonus_readings = bonus_readings + $4,
+                subscription_expires = greatest(subscription_expires, $5::timestamptz),
+                legacy_id = coalesce(legacy_id, $6),
+                source = case when source = 'site' then 'legacy-reading' else source end
+              where id = $1`,
+            [id, u.name || null, u.readingsUsed || 0, u.bonusReadings || 0, u.subscriptionExpires, u.id]
+          );
+        }
         continue;
       }
       if (!COMMIT) { idMap.set(u.id, `new:${u.id}`); created++; continue; }
@@ -87,7 +108,7 @@ async function migrateReadingApp(target) {
       );
       await target.query(
         `update public.profiles set readings_used = $2, bonus_readings = $3, subscription_expires = $4,
-             referral_rewarded = $5, created_at = $6 where id = $1`,
+             referral_rewarded = $5, created_at = $6, source = 'legacy-reading' where id = $1`,
         [id, u.readingsUsed || 0, u.bonusReadings || 0, u.subscriptionExpires, !!u.referralRewarded, u.createdAt]
       );
       idMap.set(u.id, id);

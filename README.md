@@ -18,7 +18,7 @@ Razorpay already knows about still land.
 
 ## Stack
 
-- Next.js 14 (App Router), React 18, Tailwind
+- Next.js 15 (App Router), React 19, Tailwind
 - **Supabase**: Auth (email + password) and Postgres for every feature, private Storage bucket for support screenshots
 - Razorpay (Checkout for the reading pass and Kundli report, Payment Links for personal readings)
 - Resend (reading/newsletter/support email), Gmail SMTP (booking confirmations with calendar invite), Google Calendar API (Meet links)
@@ -28,10 +28,12 @@ Razorpay already knows about still land.
 
 1. **Supabase project** — create one (or reuse the reading app's). In the SQL editor run, in order:
    `supabase/01_newsletter_subscribers.sql`, `02_daily_newsletter.sql`, `03_youtube_newsletter.sql`,
-   `04_kundli_orders.sql`, `10_unified_platform.sql`. All are safe to re-run.
+   `04_kundli_orders.sql`, `10_unified_platform.sql`. All are safe to re-run. (`11_harden_after_cutover.sql` is
+   for later — see Domains.)
 2. **Supabase Auth settings** — Authentication → Providers → Email: enabled. "Confirm email" can stay on:
    the site creates accounts already confirmed. Authentication → URL configuration → Site URL
-   `https://thedivinetarotonline.com`.
+   `https://thedivinetarotonline.com`. Authentication → Rate limits: raise the sign-in / sign-up limits — the site signs
+   users in from the server, so all visitors share a few Vercel IPs.
 3. **Environment** — copy `.env.example` to `.env.local` (and into Vercel). **`docs/ENV_GUIDE.md` explains where
    every value comes from.** Generate each secret with `openssl rand -hex 32`.
 4. **Admin access** for `/personal-reading/admin`: either set `BOOKING_ADMIN_TOKEN`, or sign in on `/reading`
@@ -77,8 +79,13 @@ All require `Authorization: Bearer $CRON_SECRET` (Vercel sends it).
 
 ## Domains (Vercel)
 
-Add `thedivinetarotonline.com`, `www.`, `reading.`, `learn.`, `booking.`, `support.` (and `chat.` if it still
-resolves) to this one project. Remove them from the old projects first. The middleware handles the redirects.
+Add `thedivinetarotonline.com`, `www.`, `reading.`, `learn.`, `booking.` and `support.` to this one project.
+Remove them from the old projects first. The middleware handles the redirects.
+
+**Leave `chat.thedivinetarotonline.com` on the old chat app until 20 Nov 2026.** 189 people still hold a premium
+pass there (most are anonymous accounts that cannot log in here), so cancel the old recurring Razorpay
+subscriptions now and move `chat.` to this project only after the last pass expires. Then run
+`supabase/11_harden_after_cutover.sql`, turn off anonymous sign-ins and turn on leaked-password protection.
 
 ## Security model
 

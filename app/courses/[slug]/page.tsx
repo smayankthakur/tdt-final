@@ -110,8 +110,8 @@ export default async function CoursePage(props: { params: Promise<{ slug: string
             </p>
           )}
           <p className="text-sm text-[#A1A1AA]">
-            Questions before you join? <Link href="/support" className="text-[#FFD700] hover:underline">Ask us</Link> ·{' '}
-            <Link href="/refund-policy" className="text-[#FFD700] hover:underline">Refund policy</Link>
+            Questions before you join? <Link href="/support" className="text-[#FFD700] underline underline-offset-2">Ask us</Link> ·{' '}
+            <Link href="/refund-policy" className="text-[#FFD700] underline underline-offset-2">Refund policy</Link>
           </p>
         </div>
       </div>

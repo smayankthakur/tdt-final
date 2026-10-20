@@ -22,7 +22,7 @@ export async function sendEmail({ to, subject, html, text }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error("RESEND_API_KEY is not set");
 
-  const res = await fetch("https://api.resend.com/emails", {
+  const res = await fetch("https://api.resend.com/emails", { signal: AbortSignal.timeout(20000),
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -53,7 +53,7 @@ export async function sendEmailBatch(messages) {
   if (!apiKey) throw new Error("RESEND_API_KEY is not set");
   if (messages.length > 100) throw new Error("sendEmailBatch: max 100 per call");
   const from = process.env.EMAIL_FROM || DEFAULT_FROM;
-  const res = await fetch("https://api.resend.com/emails/batch", {
+  const res = await fetch("https://api.resend.com/emails/batch", { signal: AbortSignal.timeout(20000),
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify(

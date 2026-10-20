@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import DeleteAccountForm from '@/components/support/DeleteAccountForm';
+import DeleteNowPanel from '@/components/support/DeleteNowPanel';
 
 export const metadata: Metadata = {
   title: 'Delete your account',
@@ -21,6 +22,8 @@ export default function DeleteAccountPage() {
           </p>
         </div>
 
+        <DeleteNowPanel />
+
         <section className="rounded-2xl border border-white/10 bg-[#121212]/70 p-6 space-y-3">
           <h2 className="text-lg font-semibold text-white">Option 1 — in the app (instant)</h2>
           <ol className="list-decimal pl-5 space-y-1 text-slate-300">
@@ -41,7 +44,7 @@ export default function DeleteAccountPage() {
 
         <section className="space-y-2 text-sm text-slate-400 leading-relaxed">
           <h2 className="text-base font-semibold text-white">What is deleted</h2>
-          <p>Your login (email and password), profile details and photo, saved readings, chats with Ginni, and any active purchases or Premium.</p>
+          <p>Your login (email and password), profile details and photo, saved readings, chats with Ginni, any active pass or Premium, your newsletter signup and your support tickets (including screenshots).</p>
           <h2 className="text-base font-semibold text-white pt-2">What is kept</h2>
           <p>
             A record of each payment (order ID, amount, date) is kept without your account for as long as Indian tax and

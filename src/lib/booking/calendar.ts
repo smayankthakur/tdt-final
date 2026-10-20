@@ -9,7 +9,7 @@ export async function createMeet(key: string, b: { name: string; email: string; 
   const [date, time] = key.split("T");
   const miss = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN"].filter((k) => !process.env[k]);
   if (miss.length) throw new Error("Missing env: " + miss.join(", "));
-  const tok = await (await fetch("https://oauth2.googleapis.com/token", {
+  const tok = await (await fetch("https://oauth2.googleapis.com/token", { signal: AbortSignal.timeout(20000),
     method: "POST",
     body: new URLSearchParams({
       client_id: process.env.GOOGLE_CLIENT_ID as string, client_secret: process.env.GOOGLE_CLIENT_SECRET as string,
@@ -21,7 +21,7 @@ export async function createMeet(key: string, b: { name: string; email: string; 
   const iso = (ms: number) => new Date(ms + 330 * 60000).toISOString().slice(0, 19) + "+05:30";
   const res = await (await fetch(
     "https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1&sendUpdates=none",
-    {
+    { signal: AbortSignal.timeout(20000),
       method: "POST",
       headers: { Authorization: `Bearer ${tok.access_token}`, "Content-Type": "application/json" },
       body: JSON.stringify({

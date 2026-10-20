@@ -1,45 +1,146 @@
-# Pre-launch audit — unified thedivinetarotonline.com
+# Pre-launch audit: unified thedivinetarotonline.com
 
-Audited 21 Oct 2026 on the production build (Next.js 15.5.28) running against a local Supabase-compatible
-stack (Postgres 16 + Supabase Auth v2.170 + PostgREST 12). Not yet deployed.
+Audited 21 Oct 2026. I tested the production build (Next.js 15.5.28) against a local Supabase-compatible stack: Postgres 16, Supabase Auth v2.170 and PostgREST 12. I also inspected:
 
-**Launch verdict: GO WITH FIXES** — no code blockers remain; the blockers below are setup steps and
-confirmations only you can do.
+- the live preview at `tdt-final.vercel.app` (no env vars set yet);
+- the live Supabase project `Tdt-Ginni` (advisors and counts, read-only);
+- the public GitHub repo `smayankthakur/tdt-final`;
+- DNS for the domain.
 
-## Blockers (before the domain is switched)
-1. **Rotate the WhatsApp Business token** found in plain text in `D:\TDT-main-v1\app\api\newsletter\Test number.txt`
-   (it is NOT in the new project). Then delete that file.
-2. **Create/prepare the Supabase project**: run `supabase/01…04` and `10_unified_platform.sql`, then
-   `npm run migrate:legacy` (dry run, then `--commit`).
-3. **Set every env var** from `.env.example` in Vercel (new random secrets; live Razorpay keys).
-4. **Register the 3 Razorpay webhooks** (URLs and events in README) with their secrets.
-5. **Business details (L16)**: add the legal entity / address / grievance contact to Terms and Contact.
+This is a technical and compliance checklist, not legal advice.
+
+**Launch verdict: NO-GO.** The code is ready. What blocks launch is outside the code: a public repo that exposes a token and customer data, a live database and Vercel project that are not set up yet, and old subscribers who still need to be handled.
+
+## Blockers (must be fixed before the domain is switched)
+
+| # | Blocker | What to do |
+| --- | --- | --- |
+| B1 | **The GitHub repo `smayankthakur/tdt-final` is public.** Its `_import/*.tgz` archives contain the WhatsApp Business token (`main.tgz` and `fresh/main.tgz` → `Test number.txt`), a SQL file with about 50 subscriber emails (`fresh/support.tgz` → `activate_razorpay_subscribers.sql`) and the paid reading content. | 1. Make the repo private now. 2. Delete `_import/` and purge it from history; deleting and recreating the repo from this clean copy is simplest. 3. Revoke the WhatsApp token in Meta and create a new one. 4. With a lawyer, decide whether the exposure of subscriber emails needs a DPDP breach notice. |
+| B2 | **189 people still hold an active premium pass on the old chat app** (latest expiry 20 Nov 2026), and Razorpay has 819 subscription IDs. 182 of them are anonymous accounts that cannot log in to the new site. | Keep `chat.thedivinetarotonline.com` on the old project until 20 Nov 2026. Cancel the recurring Razorpay subscriptions so nobody is charged again. The 7 email users carry over automatically through the backfill in `10_unified_platform.sql`. |
+| B3 | **The live database is not prepared.** No SQL has been applied to `Tdt-Ginni`, and the legacy data has not been migrated. | Run `supabase/01…04` and `10_unified_platform.sql` in the SQL editor. Then run `npm run migrate:legacy` as a dry run, then with `--commit`. |
+| B4 | **The Vercel project `tdt-final` has no environment variables**, and `SUPABASE_SERVICE_ROLE_KEY` is still empty in `.env.vercel`. Right now `/api/booking/slots` returns 503. | Paste the service-role key, load all 44 variables into Vercel, then redeploy. |
+| B5 | **The Razorpay webhooks are not registered.** | Create the 3 webhooks listed in the README, each with its own secret. |
+| B6 | **Business details are missing (L16).** | Add the legal entity name, address, a grievance officer's name and email, and the GSTIN if registered to `/terms` and `/contact`. |
+| B7 | **Supabase Auth rate limits are too low.** Sign-ins happen server-side, so every visitor shares a handful of Vercel IPs, and the default per-IP limit would start refusing logins on a busy day. | In Supabase → Authentication → Rate limits, raise the sign-in, sign-up and token-refresh limits. The site already applies its own per-email and per-IP limits. |
 
 ## High (first week)
-- Substantiate or soften "India's No.1 Psychic Tarot Reader" and "7L+ seekers" (L12).
-- Confirm whether displayed prices include GST (L10).
-- Add real, consented testimonials to `src/data/testimonials.ts` (currently empty on purpose).
-- Configure SPF/DKIM/DMARC for the Resend sending domain; turn on Supabase backups; add an uptime monitor.
-- Lawyer review of Privacy, Terms and Refund pages.
 
-## Evidence summary
-| Area | Result | Evidence |
+- Run `supabase/11_harden_after_cutover.sql` once the old chat and reading apps are switched off. It does the following:
+  - revokes anon access to the old SECURITY DEFINER functions;
+  - fixes `search_path`;
+  - makes the `user_retention` and `funnel_summary` views `security_invoker`.
+
+  Then, in the dashboard:
+  - turn off anonymous sign-ins;
+  - turn on leaked-password protection.
+
+  If the two views are readable with the anon key today, revoke them right away: the old apps don't use them.
+- Add a DMARC record for `thedivinetarotonline.com`, for example `_dmarc TXT "v=DMARC1; p=none; rua=mailto:<you>"`. SPF and DKIM are already present.
+- The current booking site on Vercel uses `rzp_test_` keys. Confirm that the new project uses the live keys, then make one real ₹1 payment end to end.
+- Substantiate or soften "India's No.1 Psychic Tarot Reader" and "Trusted by 7L+ Seekers" (L12).
+- Confirm whether the displayed prices include GST, and say so next to each price (L10).
+- Turn on Supabase point-in-time recovery or daily backups and test a restore. Add an uptime monitor.
+- Have a lawyer review the Privacy, Terms and Refund pages.
+- Rotate the old `BOOKING_ADMIN_TOKEN` (`thedivinetarot111`) everywhere it is still used. The new project uses a fresh random token.
+
+## Advisory
+
+- Signup says "account already exists" (S5). It is a deliberate UX choice and is capped at 10 signups per IP per hour. Login and password reset do not reveal whether an account exists.
+- Six `<img>` tags could use `next/image` for a better LCP.
+- The decorative watermark glyphs (`aria-hidden`) on `/premium`, `/support` and `/delete-account` fail the contrast check by design. WCAG exempts decorative text.
+- Next 15 `next lint` is deprecated. Move to the ESLint CLI when convenient.
+
+---
+
+## 1. Legal and trust
+
+| ID | Status | Evidence | Fix |
+| --- | --- | --- | --- |
+| L1 Privacy policy | PASS | `/privacy` lists the data collected, purposes, retention, processors (Supabase, Razorpay, Resend, Google, Sentry, analytics) and withdrawal; it is linked in the footer and the signup form | lawyer review (High) |
+| L2 Terms | PASS | `/terms` covers acceptable use, liability, payments and jurisdiction | lawyer review |
+| L3 Refund policy | PASS | `/refund-policy`, linked from the footer, course pages and checkout | — |
+| L4 Cookie policy | PASS | the cookie table on `/privacy` lists Supabase auth cookies, consent, GA, Clarity and Razorpay | — |
+| L5 Consent banner | PASS | `ConsentAnalytics.tsx`: GA, GTM and Clarity load only after Accept; Reject has equal weight; "Cookie settings" is in the footer | — |
+| L6 Form consents | PASS | the newsletter is opt-in only; the 18+/Terms checkbox is unticked and separate; `age_confirmed_at` is stored on the user | — |
+| L7 Data minimisation | PASS | birth details are asked only for Kundli and personal readings, where the service needs them | — |
+| L8 Third-party SDKs | PASS | Razorpay, GA/GTM, Clarity, Sentry and Resend are each named in the privacy policy | — |
+| L9 Dark patterns | PASS | no pre-ticked boxes; the Diwali offer has a real end date (`src/lib/booking/offer.ts`); the pass is a one-time 30-day purchase, not auto-renewing | — |
+| L10 Hidden fees | NEEDS-HUMAN | the full price is shown before checkout and set on the server; GST inclusion is not stated | state "incl. GST" or add GST |
+| L11 Fake reviews | PASS | untraceable testimonials were removed; `src/data/testimonials.ts` is empty on purpose | add only consented ones |
+| L12 Claims | NEEDS-HUMAN | "India's No.1", "7L+ seekers"; the astrology disclaimer is on the reading and Kundli pages | substantiate or soften |
+| L13 Alt text | PASS | axe `image-alt`: 0 violations on 14 pages | — |
+| L14 Contrast | PASS | axe `color-contrast`: 0 real violations after fixes (footer trust row, upload hints); only decorative `aria-hidden` glyphs remain | — |
+| L15 Keyboard | PASS | "Skip to content" is the first Tab stop on every page with a visible focus ring; form labels are linked (`FloatingInput` and Kundli fields fixed); the scrollable strip is focusable | real-device check |
+| L16 Business details | FAIL | no legal entity, address or grievance officer on any page | Blocker B6 |
+| L17 Minors | PASS | an 18+ confirmation is required at signup (`AuthGate.jsx`, server rejects without it); analytics need consent | — |
+| L18 Unsubscribe | PASS | the daily and YouTube emails send a one-click `List-Unsubscribe` header; tested end to end | — |
+| L19 Licences | NEEDS-HUMAN | card artwork, photos and fonts came from the old repos | keep licence proof |
+| L20 Deletion | PASS | `/delete-account` has an instant self-serve delete that removes the auth user, cascades to profile, chat and orders, and removes tickets, uploads and the newsletter row; tested | — |
+
+## 2. Security
+
+| ID | Status | Evidence | Fix |
+| --- | --- | --- | --- |
+| S1 Headers | PASS | `curl -sI https://tdt-final.vercel.app`: HSTS `max-age=63072000; includeSubDomains; preload`, CSP with nonce, nosniff, `X-Frame-Options`, Referrer-Policy, Permissions-Policy | — |
+| S2 CSRF | PASS | `middleware.ts` rejects cross-origin POST, PUT, PATCH and DELETE to `/api` with 403 (tested); cookies are SameSite=Lax | — |
+| S3 Sessions on reset | PASS | reset calls `signOut({scope:'others'})`; the e2e test shows the old session is refused | — |
+| S4 Reset links | PASS | single-use Supabase recovery token, short expiry, reuse rejected (e2e) | — |
+| S5 Enumeration | PASS (accepted) | login and reset return generic messages; signup reveals existing accounts (see Advisory) | — |
+| S6 Uploads | PASS | PNG, JPEG and WebP only, checked by MIME and magic bytes (spoofed file refused in e2e); 2.5 MB app cap and 3 MB bucket cap; private bucket; random names; signed links | — |
+| S7 Webhooks | PASS | constant-time HMAC on the raw body for all 3 webhooks and on the checkout callback; idempotent `credit_reading_order` (12 parallel → 1 credit) | register them (B5) |
+| S8 Server prices | PASS | amounts come from `src/gkb/lib/pricing.js`, `src/lib/booking/slots.ts` and the Kundli route; the client amount is ignored | — |
+| S9 Prompt injection | PASS | the AI fallback is off unless a key is set; its output is rendered as text and never triggers actions | — |
+| S10 AI caps | PASS | every AI call needs a paid credit; `max_tokens: 500`; question capped at 500 characters | set provider spend alert if enabled |
+| S11 Request size | PASS | upload caps, length caps on questions, forms and support text; Vercel 4.5 MB body limit | — |
+| S12 Rate limits | PASS | DB limiter `rate_hit()`: login 10/15 min per email and 30 per IP, signup 10/h per IP, reset 3/h, support 5/h, booking holds 6/h, subscribe 10/h | raise Supabase limits (B7) |
+| S13 Validation | PASS | server-side checks on every route; supabase-js parameterises queries; no raw HTML rendering of user input | — |
+| S14 CORS | PASS | no `Access-Control-Allow-Origin` on the API; same-origin only | — |
+| S15 Directory listing | PASS | the support bucket is private; `/.env` and `/.env.vercel` return 404 on the preview | — |
+| S16 Admin routes | PASS | `/admin` and `/api/debug/*` return 404; the booking admin needs a Supabase `role=admin` or the token | — |
+| S17 Lockout | PASS | per-email login throttle (10/15 min) with no permanent lock, so real users can't be locked out | — |
+| S18 Security logs | PASS | Supabase Auth audit log; payment, webhook and admin events go to Sentry/console without secrets | — |
+| S19 Cookies | PASS | `sb-…-auth-token` is HttpOnly, Secure in production, SameSite=Lax (verified in the response header) | — |
+| S20 DB permissions | PASS (new schema) / FAIL (live DB today) | new tables: RLS on, own-row reads only, money RPCs callable only by service_role (e2e 401 for anon). Live advisors: SECURITY DEFINER views, anon-callable functions, mutable `search_path`, leaked-password protection off | `11_harden_after_cutover.sql` (High) |
+| S21 Secrets | FAIL | the new code and client bundle are clean, but the public repo's `_import/*.tgz` exposes the WhatsApp token | Blocker B1 |
+| S22 Dependencies | PASS | `npm audit --omit=dev`: 0 vulnerabilities; Next 15.5.28 | — |
+| S23 Debug leaks | PASS | generic error JSON; production source maps go to Sentry only | — |
+
+## 3. Scalability and reliability
+
+| ID | Status | Evidence | Fix |
+| --- | --- | --- | --- |
+| Rate limiting | PASS | see S12; optional Upstash at the edge | — |
+| Caching | PASS | static pages are SSG; hashed assets are immutable; authenticated APIs are `no-store` | — |
+| Timeouts | PASS | `AbortSignal.timeout(20000)` on every outbound call (Razorpay, Google, Resend, WhatsApp, YouTube, astrology) | — |
+| Retries | N/A | no automatic retries on payment calls by design; webhooks are retried by Razorpay | — |
+| Idempotency | PASS | the order ID is the key for credits; slot holds and claims are atomic (`pr_hold_slot` / `pr_claim_slot`) | — |
+| Indexes | PASS | indexes on `user_id`, `created_at`, `order_id`, `slot` and `email` in `10_unified_platform.sql` | — |
+| N+1 | PASS | list endpoints use one query each | — |
+| Pooling | PASS | supabase-js goes over HTTP (PostgREST); the migration uses one direct connection | — |
+| Race conditions | PASS | 12 parallel consumes with 3 credits → exactly 3 succeed; no double booking | — |
+| Memory | PASS | no module-level growing caches; serverless | — |
+| Cron | PASS | 3 crons, `CRON_SECRET` required, UTC times, idempotent (daily send dedupes by date) | — |
+| CI/CD | PASS | GitHub Actions: lint, typecheck, jest, build; Vercel previews | — |
+| Queues / sagas / scale-out | N/A | the traffic and the single service do not justify them | — |
+
+## 4. Launch hygiene
+
+| Item | Status | Evidence |
 | --- | --- | --- |
-| End-to-end flows | PASS | 73/73 checks: signup, login, reset, referral, paywall, ₹199 pass verify + webhook, reading, chat history, booking hold/pay/form/claim, admin, support, newsletter, cron |
-| No double credit / double booking | PASS | 12 parallel credits → 1 applied; 12 parallel picks with 3 credits → 3 allowed; slot claim atomic (`pr_claim_slot`) |
-| S20 RLS | PASS | anon key reads 0 profiles; signed-in user sees only own row; cannot PATCH own pass; cannot call money RPCs (401) |
-| S7 / S8 payments | PASS | constant-time HMAC on checkout + raw-body webhooks; amounts set server-side (`src/gkb/lib/pricing.js`, `src/lib/booking/slots.ts`) |
-| S3 / S4 sessions & reset | PASS | reset link single-use, other devices signed out after reset (tested) |
-| S6 uploads | PASS | PNG/JPG/WebP only, 2.5 MB cap, private bucket, signed 7-day links |
-| S12 rate limits | PASS | reset 3/h per email, support 5/h per IP, booking holds 6/h per IP, subscribe 10/h, admin password 20/15 min |
-| S16 admin routes | PASS | `/admin`, `/admin/translations`, `/api/debug/*` → 404; booking admin needs token or Supabase admin role |
-| S1 headers | PASS | HSTS preload, CSP with nonce, `frame-ancestors 'self'`, nosniff, Referrer-Policy, Permissions-Policy |
-| S21 secrets | PASS (new code) | repo + client bundle grep clean; see Blocker 1 for the old folder |
-| S22 dependencies | PASS | `npm audit --omit=dev`: 0 vulnerabilities |
-| L1–L3 legal pages | PASS | `/privacy` (cookie table, processors), `/terms`, `/refund-policy` linked in every footer |
-| L5 cookie consent | PASS | GA/GTM/Clarity load only after "Accept"; Reject equally prominent; "Cookie settings" in footer |
-| L11 fake reviews | PASS | untraceable testimonials removed |
-| L18 unsubscribe | PASS | one-click List-Unsubscribe on daily + YouTube emails; tested |
-| L20 deletion | PASS | `/delete-account` request + Supabase cascade delete (auth user → profile, chat, orders) |
-| Pages | PASS | 19 routes × mobile/desktop: no overflow, no hydration errors, no broken images, no raw i18n keys |
-| Unit tests / types / build | PASS | jest 18/18, `tsc` clean, `next build` clean |
+| robots / sitemap / noindex | PASS | `/robots.txt` and `/sitemap.xml` are generated from `NEXT_PUBLIC_APP_URL`; no noindex in production |
+| SSL, www and legacy subdomains | NEEDS-HUMAN | the middleware redirects `www`, `reading`, `learn`, `booking` and `support` (tested locally); the domains must be added in Vercel |
+| 404 / 500 pages | PASS | custom `app/not-found.tsx` (added) and `global-error.tsx` |
+| Titles, meta, OG, favicon | PASS | per-page metadata and OG image |
+| SPF / DKIM / DMARC | FAIL (DMARC) | SPF and DKIM are on the Resend `send.` subdomain; there is no `_dmarc` record |
+| Monitoring and backups | NEEDS-HUMAN | the Sentry DSN is configured; uptime monitoring and backups are not confirmed |
+| Phone and Lighthouse | PASS (emulated) | 19 routes in mobile and desktop emulation: no overflow, hydration errors or broken images; real phone still to do |
+| Tests | PASS | e2e 82/82, the browser reading flow (paywall → pass → draw → reveal → history), jest 18/18, `tsc` clean, `next build` clean |
+
+## Cutover order
+
+1. B1: make the repo private, then rotate the WhatsApp token.
+2. B3 and B4: apply the SQL, run the migration, then load the env and redeploy.
+3. B5–B7: webhooks, business details, Auth rate limits.
+4. Make a ₹1 live test: buy the pass, book a personal reading, buy the Kundli report.
+5. Move `thedivinetarotonline.com`, `www`, `reading`, `learn`, `booking` and `support` to this project. Leave `chat` on the old app until 20 Nov 2026.
+6. After 20 Nov 2026, once the subscriptions are cancelled: point `chat` here and run `11_harden_after_cutover.sql`.

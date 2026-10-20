@@ -16,7 +16,7 @@ const toText = (h: string) =>
 export async function sendMail(m: { to: string | string[]; subject: string; html: string; replyTo?: string }) {
   const to = Array.isArray(m.to) ? m.to : [m.to];
   if (process.env.RESEND_API_KEY) {
-    const res = await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.resend.com/emails', { signal: AbortSignal.timeout(20000),
       method: 'POST',
       headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -112,7 +112,7 @@ export async function sendReportEmail(to: string, p1Name: string, p2Name: string
     return false;
   }
   try {
-    const res = await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.resend.com/emails', { signal: AbortSignal.timeout(20000),
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -152,7 +152,7 @@ export async function logReportToSheet(input: ReportInput): Promise<boolean> {
     return false;
   }
   try {
-    const res = await fetch(url, {
+    const res = await fetch(url, { signal: AbortSignal.timeout(20000),
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       redirect: 'follow',

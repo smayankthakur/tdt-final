@@ -9,6 +9,7 @@ export default function AuthGate({ onAuthed }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [adult, setAdult] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -40,7 +41,7 @@ export default function AuthGate({ onAuthed }) {
       const res = await fetch(`/api/auth/${mode}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(mode === "signup" ? { email, password, name, referralCode } : { email, password }),
+        body: JSON.stringify(mode === "signup" ? { email, password, name, referralCode, ageConfirmed: adult } : { email, password }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
@@ -112,6 +113,23 @@ export default function AuthGate({ onAuthed }) {
               placeholder="At least 8 characters"
             />
           </div>
+          )}
+
+          {mode === "signup" && (
+            <label htmlFor="authAdult" style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14, lineHeight: 1.45, margin: "4px 0 16px", cursor: "pointer" }}>
+              <input
+                id="authAdult"
+                type="checkbox"
+                required
+                checked={adult}
+                onChange={(e) => setAdult(e.target.checked)}
+                style={{ marginTop: 3, width: 18, height: 18, flex: "0 0 auto" }}
+              />
+              <span>
+                I am 18 or older and agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and{" "}
+                <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.
+              </span>
+            </label>
           )}
 
           {error && (

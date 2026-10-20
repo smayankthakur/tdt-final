@@ -16,7 +16,7 @@ export default function RefundPolicyPage() {
       intro={
         <p>
           Please read this before you pay. If something went wrong with a payment, open a ticket on the{' '}
-          <Link href="/support" className="text-[#FFD700] hover:underline">Support page</Link> with your registered email and a payment
+          <Link href="/support" className="text-[#FFD700] underline underline-offset-2">Support page</Link> with your registered email and a payment
           screenshot — we reply within 24 hours.
         </p>
       }

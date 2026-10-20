@@ -37,7 +37,10 @@ export default function ProblemStrip() {
            initial="hidden"
            whileInView="visible"
            viewport={{ once: true, margin: '-100px' }}
-           className="flex gap-6 overflow-x-auto hide-scrollbar pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:gap-block sm:overflow-visible sm:pb-0"
+           tabIndex={0}
+          role="region"
+          aria-label="Common problems"
+          className="flex gap-6 overflow-x-auto hide-scrollbar pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:gap-block sm:overflow-visible sm:pb-0"
          >
           {problemsData.map((problem) => {
             const ProblemIcon = problem.icon;

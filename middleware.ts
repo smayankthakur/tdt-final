@@ -187,6 +187,20 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith('/api/')) {
+    // CSRF: a browser request that changes state must come from this site.
+    // Server-to-server callers (Razorpay webhooks, Vercel Cron) send no Origin.
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+      const origin = request.headers.get('origin');
+      if (origin && origin !== 'null') {
+        let originHost = '';
+        try { originHost = new URL(origin).host.toLowerCase(); } catch { /* malformed */ }
+        const host = (request.headers.get('x-forwarded-host') || request.headers.get('host') || '').toLowerCase();
+        const sameSite = originHost === host || originHost === APEX || originHost.endsWith('.' + APEX);
+        if (!sameSite) {
+          return applySecurityHeaders(NextResponse.json({ error: 'Cross-site request blocked' }, { status: 403 }));
+        }
+      }
+    }
     const limited = await rateLimit(request, pathname);
     if (limited) return applySecurityHeaders(limited);
     return applySecurityHeaders(NextResponse.next());

@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import * as Sentry from "@sentry/nextjs";
 import { createAuthClient } from "@/lib/supabase/server";
-import { dbConfigured, getProfile } from "@/gkb/lib/db";
+import { db, dbConfigured, getProfile } from "@/gkb/lib/db";
 import { FREE_READING_LIMIT, PASS_PRICE_INR, REFERRAL_BONUS_READINGS } from "@/gkb/lib/pricing";
 
 export { FREE_READING_LIMIT, REFERRAL_BONUS_READINGS };
@@ -25,7 +25,18 @@ export async function getSessionUser() {
     const supabase = await createAuthClient();
     const { data, error } = await supabase.auth.getUser();
     if (error || !data?.user) return null;
-    const profile = await getProfile(data.user.id);
+    let profile = await getProfile(data.user.id);
+    if (!profile && data.user.email && !data.user.is_anonymous) {
+      // An email user created outside this site (e.g. in the Supabase
+      // dashboard) gets a profile on first visit.
+      await db()
+        .from("profiles")
+        .upsert(
+          { id: data.user.id, email: data.user.email.toLowerCase(), name: data.user.user_metadata?.name || null, referral_code: await newReferralCode(), source: "external" },
+          { onConflict: "id", ignoreDuplicates: true }
+        );
+      profile = await getProfile(data.user.id);
+    }
     if (!profile) return null;
     return { ...profile, email: data.user.email || profile.email };
   } catch (err) {
@@ -33,6 +44,11 @@ export async function getSessionUser() {
     Sentry.captureException(err, { tags: { area: "getSessionUser" } });
     return null;
   }
+}
+
+async function newReferralCode() {
+  const { data } = await db().rpc("gen_referral_code");
+  return data || Math.random().toString(36).slice(2, 10).toUpperCase();
 }
 
 export function summarizeAccess(user) {

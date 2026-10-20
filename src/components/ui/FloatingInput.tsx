@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -32,6 +32,7 @@ export default function FloatingInput({
   required = false,
 }: FloatingInputProps) {
   const [focused, setFocused] = useState(false);
+  const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isActive = focused || value.length > 0;
@@ -59,6 +60,7 @@ export default function FloatingInput({
         
           <input
            ref={inputRef}
+           id={id}
            type={type}
            value={value}
            onChange={(e) => onChange(e.target.value)}
@@ -79,6 +81,7 @@ export default function FloatingInput({
         
         {/* Floating Label */}
         <motion.label
+          htmlFor={id}
           initial={false}
           animate={{
             top: isActive ? -10 : 6,
@@ -156,6 +159,7 @@ export function FloatingTextarea({
   required = false,
 }: FloatingTextareaProps) {
   const [focused, setFocused] = useState(false);
+  const id = useId();
   const isActive = focused || value.length > 0;
   const isOverLimit = maxLength ? value.length > maxLength : false;
 
@@ -168,6 +172,7 @@ export function FloatingTextarea({
           </div>
         )}
          <textarea
+           id={id}
            value={value}
            onChange={(e) => onChange(e.target.value)}
            onFocus={() => setFocused(true)}
@@ -189,6 +194,7 @@ export function FloatingTextarea({
         
         {/* Floating Label */}
         <motion.label
+          htmlFor={id}
           initial={false}
           animate={{
             top: isActive ? -10 : 6,

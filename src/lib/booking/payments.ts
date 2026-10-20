@@ -5,7 +5,7 @@ const keyId = () => process.env.BOOKING_RAZORPAY_KEY_ID || process.env.RAZORPAY_
 const keySecret = () => process.env.BOOKING_RAZORPAY_KEY_SECRET || process.env.RAZORPAY_KEY_SECRET;
 export const razorpayAuth = () => "Basic " + Buffer.from(`${keyId()}:${keySecret()}`).toString("base64");
 const rz = async (path: string) =>
-  (await fetch(`https://api.razorpay.com/v1/${path}`, { headers: { Authorization: razorpayAuth() }, cache: "no-store" })).json();
+  (await fetch(`https://api.razorpay.com/v1/${path}`, { signal: AbortSignal.timeout(20000), headers: { Authorization: razorpayAuth() }, cache: "no-store" })).json();
 
 /** Marks an order paid exactly once (webhook and the return-page check can both call this). */
 export async function markPaid(bid: string, plinkId: string, paymentId: string | null, email: string, phone: string) {

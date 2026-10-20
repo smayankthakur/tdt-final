@@ -82,9 +82,9 @@ function UploadBox({
           </div>
         ) : (
           <>
-            <UploadCloud className="w-8 h-8 text-slate-500 mb-3" />
+            <UploadCloud className="w-8 h-8 text-slate-400 mb-3" />
             <span className="text-sm text-slate-300 font-medium text-center">{prompt}</span>
-            <span className="text-xs text-slate-500 mt-1">{t('support.fileHint')}</span>
+            <span className="text-xs text-slate-400 mt-1">{t('support.fileHint')}</span>
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp"
@@ -239,7 +239,7 @@ export default function SupportForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <UploadBox label={t('support.payment')} hint={t('support.recommended')} hintClass="text-gold/70"
               prompt={t('support.paymentPrompt')} value={payment} onChange={setPayment} onError={setErrorKey} />
-            <UploadBox label={t('support.errorShot')} hint={t('support.optional')} hintClass="text-slate-500"
+            <UploadBox label={t('support.errorShot')} hint={t('support.optional')} hintClass="text-slate-400"
               prompt={t('support.errorPrompt')} value={loginError} onChange={setLoginError} onError={setErrorKey} />
           </div>
 

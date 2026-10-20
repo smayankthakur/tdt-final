@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createAuthClient } from "@/lib/supabase/server";
 import { db } from "@/gkb/lib/db";
 import { authConfigured, getSessionUser, summarizeAccess } from "@/gkb/lib/auth";
+import { clientIp, hitLimit } from "@/lib/rateLimitDb";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NOT_CONFIGURED = { error: "Server isn't configured yet. Contact the site owner." };
@@ -14,7 +15,7 @@ const NOT_CONFIGURED = { error: "Server isn't configured yet. Contact the site o
 export async function POST(req) {
   if (!authConfigured()) return NextResponse.json(NOT_CONFIGURED, { status: 500 });
 
-  const { email, password, name, referralCode } = await req.json().catch(() => ({}));
+  const { email, password, name, referralCode, ageConfirmed } = await req.json().catch(() => ({}));
   if (!email || !EMAIL_RE.test(email)) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
   }
@@ -22,10 +23,16 @@ export async function POST(req) {
   if (!cleanName) {
     return NextResponse.json({ error: "Please enter your name." }, { status: 400 });
   }
+  if (ageConfirmed !== true) {
+    return NextResponse.json({ error: "Please confirm you are 18 or older and accept the Terms." }, { status: 400 });
+  }
   if (!password || String(password).length < 8 || String(password).length > 72) {
     return NextResponse.json({ error: "Password must be 8 to 72 characters." }, { status: 400 });
   }
   const normalizedEmail = email.trim().toLowerCase();
+  if (await hitLimit(`signup:ip:${clientIp(req)}`, 10, 60 * 60)) {
+    return NextResponse.json({ error: "Too many sign-ups from this network. Please try again later." }, { status: 429 });
+  }
 
   try {
     // An unknown or missing referral code is never an error — signup just
@@ -44,7 +51,7 @@ export async function POST(req) {
       email: normalizedEmail,
       password: String(password),
       email_confirm: true,
-      user_metadata: { name: cleanName, referred_by: referredBy },
+      user_metadata: { name: cleanName, referred_by: referredBy, age_confirmed_at: new Date().toISOString() },
     });
     if (createErr) {
       if (createErr.status === 422 || /already|exists|registered/i.test(createErr.message)) {

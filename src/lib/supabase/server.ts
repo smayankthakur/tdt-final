@@ -40,6 +40,12 @@ export async function createAuthClient(): Promise<SupabaseClient> {
   const { cookies } = await import('next/headers');
   const cookieStore = await cookies();
   return createServerClient(url(), anonKey(), {
+    cookieOptions: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production' && !url().startsWith('http://localhost'),
+      sameSite: 'lax',
+      path: '/',
+    },
     cookies: {
       getAll() {
         return cookieStore.getAll();

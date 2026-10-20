@@ -213,7 +213,7 @@ const Footer = () => {
       </div>
 
       <div className="px-6 py-4 border-t border-white/5">
-        <div className="flex items-center justify-center gap-6 text-[#5A5A5A] text-xs flex-wrap">
+        <div className="flex items-center justify-center gap-6 text-gray-400 text-xs flex-wrap">
           {trustItems.map((item, i) => (
             <div key={i} className="flex items-center gap-2">
               <item.icon className="w-4 h-4 text-amber-500/40" />
@@ -230,7 +230,7 @@ const Footer = () => {
             href="https://sitelytc.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-amber-500/70 hover:text-amber-400 transition-colors duration-200"
+            className="text-amber-400 underline underline-offset-2 hover:text-amber-300 transition-colors duration-200"
           >
             Sitelytc
           </a>

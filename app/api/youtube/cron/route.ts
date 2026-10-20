@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   let latest: VideoInfo | null = null;
   try {
     const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${CHANNEL_ID}`;
-    const res = await fetch(feedUrl, {
+    const res = await fetch(feedUrl, { signal: AbortSignal.timeout(20000),
       headers: { 'User-Agent': 'TheDivineTarot-Newsletter/1.0' },
       cache: 'no-store',
     });

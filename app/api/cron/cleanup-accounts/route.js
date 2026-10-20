@@ -46,6 +46,7 @@ export async function GET(req) {
       .from("profiles")
       .select("id, email, created_at")
       .is("subscription_expires", null)
+      .eq("source", "site") // never touch accounts that came from the old apps
       .lt("created_at", cutoff.toISOString())
       .order("created_at", { ascending: true })
       .limit(limit);

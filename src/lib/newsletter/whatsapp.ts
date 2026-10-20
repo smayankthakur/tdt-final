@@ -80,7 +80,7 @@ export async function sendDailyWhatsAppBatch(
     }
 
     try {
-      const res = await fetch(url, {
+      const res = await fetch(url, { signal: AbortSignal.timeout(20000),
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
