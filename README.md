@@ -26,10 +26,11 @@ Razorpay already knows about still land.
 
 ## First-time setup
 
-1. **Supabase project** — create one (or reuse the reading app's). In the SQL editor run, in order:
+1. **Supabase project** — the site uses the reading app's project **ginni2** (`hnaggjopklxcgzxsyswc`), so the
+   old reading accounts are already in the same database. In its SQL editor run, in order:
    `supabase/01_newsletter_subscribers.sql`, `02_daily_newsletter.sql`, `03_youtube_newsletter.sql`,
-   `04_kundli_orders.sql`, `10_unified_platform.sql`. All are safe to re-run. (`11_harden_after_cutover.sql` is
-   for later — see Domains.)
+   `04_kundli_orders.sql`, `10_unified_platform.sql`, then (optional) `11_harden_after_cutover.sql`.
+   All are safe to re-run, and none of them touches the old Prisma tables or the mobile app's `tdt_*` tables.
 2. **Supabase Auth settings** — Authentication → Providers → Email: enabled. "Confirm email" can stay on:
    the site creates accounts already confirmed. Authentication → URL configuration → Site URL
    `https://thedivinetarotonline.com`. Authentication → Rate limits: raise the sign-in / sign-up limits — the site signs
@@ -42,18 +43,15 @@ Razorpay already knows about still land.
 
 ## Moving the existing data (once)
 
-```bash
-# dry run — prints counts, writes nothing
-SUPABASE_DB_URL="postgresql://postgres:<pw>@db.<ref>.supabase.co:5432/postgres" \
-LEGACY_DATABASE_URL="<the reading app's old DIRECT_URL>" \
-FIREBASE_SERVICE_ACCOUNT_JSON='<booking service-account JSON, one line>' \
-npm run migrate:legacy
+Uses the Supabase API with `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (read from `.env.local`), so no
+database password is needed. `FIREBASE_SERVICE_ACCOUNT_JSON` (in `.env.migration.local`) adds the bookings.
 
-# then for real
-npm run migrate:legacy -- --commit
+```bash
+npm run migrate:legacy               # dry run — prints counts, writes nothing
+npm run migrate:legacy -- --commit   # then for real
 ```
 
-- Reading-app users keep their passwords (bcrypt hashes move into Supabase Auth), passes, bonus readings,
+- Reading-app users (the old Prisma `"User"` table) keep their passwords (bcrypt hashes move into Supabase Auth), passes, bonus readings,
   referral codes, referrals, last 30 chat messages and orders.
 - Personal-reading orders, bookings, payment problems and the slot settings move from Firestore.
   (`npm i -D firebase-admin` first if you migrate bookings.)
@@ -84,8 +82,8 @@ Remove them from the old projects first. The middleware handles the redirects.
 
 **Leave `chat.thedivinetarotonline.com` on the old chat app until 20 Nov 2026.** 189 people still hold a premium
 pass there (most are anonymous accounts that cannot log in here), so cancel the old recurring Razorpay
-subscriptions now and move `chat.` to this project only after the last pass expires. Then run
-`supabase/11_harden_after_cutover.sql`, turn off anonymous sign-ins and turn on leaked-password protection.
+subscriptions now and move `chat.` to this project only after the last pass expires. The old chat app has its
+own Supabase project (Tdt-Ginni), which can be paused at that point.
 
 ## Security model
 

@@ -15,21 +15,23 @@ Legend: **Required** = the site or that feature does not work without it. **Opti
 
 ## 2. Supabase — database + the one login for everything
 
-Supabase dashboard → **Project Settings → API**.
+Use the reading app's project **ginni2** (`https://hnaggjopklxcgzxsyswc.supabase.co`) → **Project Settings → API Keys →
+Legacy anon, service_role API keys**.
 
 | Variable | Required | Where |
 | --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Required | "Project URL" |
+| `NEXT_PUBLIC_SUPABASE_URL` | Required | `https://hnaggjopklxcgzxsyswc.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Required | "anon public" key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Required | "service_role" key — **secret**, server only, never put in a `NEXT_PUBLIC_` variable |
 
 Optional runtime overrides (same values): `SUPABASE_URL`, `SUPABASE_ANON_KEY`. Useful when the env is set after the build.
 
-Then, once, in **SQL Editor**: run `supabase/01_…`, `02_…`, `03_…`, `04_…`, `10_unified_platform.sql` in that order.
+Then, once, in **SQL Editor**: run `supabase/01_…`, `02_…`, `03_…`, `04_…`, `10_unified_platform.sql` in that order
+(`11_harden_after_cutover.sql` is optional).
 
-For the one-time data move only (not needed in Vercel):
-`SUPABASE_DB_URL` (Project Settings → Database → Connection string → "Session pooler" or direct, with the DB password),
-`LEGACY_DATABASE_URL` (the old reading app's `DIRECT_URL`), `FIREBASE_SERVICE_ACCOUNT_JSON` (old booking project's service-account JSON on one line).
+The one-time data move (`npm run migrate:legacy`) uses the same URL and service-role key — no database password
+needed. Only for the bookings: `FIREBASE_SERVICE_ACCOUNT_JSON` (old booking project's service-account JSON on one
+line) in `.env.migration.local`. Not needed in Vercel.
 
 ## 3. Secrets you generate yourself
 

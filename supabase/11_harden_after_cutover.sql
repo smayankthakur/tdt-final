@@ -1,33 +1,30 @@
 -- =============================================================================
--- Run ONLY after the old apps (chat.thedivinetarotonline.com / tdt-ginni-1,
--- the old main site) are switched off. Fixes what Supabase's security advisor
--- reports for objects those apps created in this project. Safe to re-run.
+-- Optional hardening for the site's Supabase project (ginni2,
+-- hnaggjopklxcgzxsyswc). Run after 10_unified_platform.sql. Safe to re-run;
+-- every statement is skipped if the object does not exist.
+--
+-- Security Advisor on 21 Oct 2026: 0 errors, 11 warnings.
+--  * rls_auto_enable() is an event-trigger helper. Nobody should call it
+--    over the API, so execute is revoked below.
+--  * tdt_* functions (tdt_log_events, tdt_use_reading, tdt_reading_status,
+--    tdt_my_referral_code, tdt_set_referrer, tdt_is_admin, tdt_funnel_report)
+--    belong to the mobile-app backend in this project and are called by
+--    the app on purpose. They are NOT changed here; review them with the
+--    app's code before revoking anything.
 -- =============================================================================
 
--- SECURITY DEFINER functions that anyone (even logged-out visitors) can call
--- through /rest/v1/rpc. The new site never calls them from the browser.
-revoke execute on function public.get_user_stats(uuid) from anon, authenticated, public;
-revoke execute on function public.increment_message_usage(uuid, text, integer) from anon, authenticated, public;
-revoke execute on function public.rls_auto_enable() from anon, authenticated, public;
-revoke execute on function public.app_use_reading() from anon, authenticated, public;
--- has_role() is used inside the old apps' RLS policies; keep it callable by
--- signed-in users but not by anonymous visitors.
-revoke execute on function public.has_role(uuid, public.app_role) from anon, public;
+do $$
+begin
+  if to_regprocedure('public.rls_auto_enable()') is not null then
+    revoke execute on function public.rls_auto_enable() from anon, authenticated, public;
+  end if;
+end $$;
 
--- Functions without a fixed search_path.
-alter function public.get_user_stats(uuid) set search_path = public;
-alter function public.track_subscription_event(uuid, character varying, jsonb) set search_path = public;
-alter function public.increment_reading_count(uuid, character varying) set search_path = public;
-alter function public.get_remaining_messages(uuid, character varying) set search_path = public;
-alter function public.log_payment(uuid, integer, character varying, character varying, character varying, character varying) set search_path = public;
-
--- Analytics views ran with their creator's rights (bypassing RLS).
-alter view if exists public.user_retention set (security_invoker = true);
-alter view if exists public.funnel_summary set (security_invoker = true);
-revoke select on public.user_retention from anon, authenticated;
-revoke select on public.funnel_summary from anon, authenticated;
-
--- Also in the dashboard (not SQL):
---  * Authentication -> Sign In / Providers -> turn OFF "Allow anonymous sign-ins"
---    once the old chat app is retired (the new site never uses them).
---  * Authentication -> Passwords -> enable "Leaked password protection" (Pro plan).
+-- In the dashboard (not SQL):
+--  * Authentication -> Rate limits: raise sign-in / sign-up / token refresh
+--    limits (the site signs users in from Vercel's servers, so visitors share
+--    a few IPs).
+--  * Authentication -> Passwords -> "Leaked password protection" (Pro plan).
+--  * Old chat app (chat.thedivinetarotonline.com) lives in a different project
+--    (Tdt-Ginni). Once its last pass expires (20 Nov 2026) and its Razorpay
+--    subscriptions are cancelled, that project can be paused.

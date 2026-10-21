@@ -3,7 +3,7 @@
 Audited 21 Oct 2026. I tested the production build (Next.js 15.5.28) against a local Supabase-compatible stack: Postgres 16, Supabase Auth v2.170 and PostgREST 12. I also inspected:
 
 - the live preview at `tdt-final.vercel.app` (no env vars set yet);
-- the live Supabase project `Tdt-Ginni` (advisors and counts, read-only);
+- the site's Supabase project **ginni2** (`hnaggjopklxcgzxsyswc`, the reading app's database: Security Advisor and row counts, read-only), and the old chat app's project `Tdt-Ginni`;
 - the public GitHub repo `smayankthakur/tdt-final`;
 - DNS for the domain.
 
@@ -16,30 +16,23 @@ This is a technical and compliance checklist, not legal advice.
 | # | Blocker | What to do |
 | --- | --- | --- |
 | B1 | **The GitHub repo `smayankthakur/tdt-final` is public.** Its `_import/*.tgz` archives contain the WhatsApp Business token (`main.tgz` and `fresh/main.tgz` → `Test number.txt`), a SQL file with about 50 subscriber emails (`fresh/support.tgz` → `activate_razorpay_subscribers.sql`) and the paid reading content. | 1. Make the repo private now. 2. Delete `_import/` and purge it from history; deleting and recreating the repo from this clean copy is simplest. 3. Revoke the WhatsApp token in Meta and create a new one. 4. With a lawyer, decide whether the exposure of subscriber emails needs a DPDP breach notice. |
-| B2 | **189 people still hold an active premium pass on the old chat app** (latest expiry 20 Nov 2026), and Razorpay has 819 subscription IDs. 182 of them are anonymous accounts that cannot log in to the new site. | Keep `chat.thedivinetarotonline.com` on the old project until 20 Nov 2026. Cancel the recurring Razorpay subscriptions so nobody is charged again. The 7 email users carry over automatically through the backfill in `10_unified_platform.sql`. |
-| B3 | **The live database is not prepared.** No SQL has been applied to `Tdt-Ginni`, and the legacy data has not been migrated. | Run `supabase/01…04` and `10_unified_platform.sql` in the SQL editor. Then run `npm run migrate:legacy` as a dry run, then with `--commit`. |
-| B4 | **The Vercel project `tdt-final` has no environment variables**, and `SUPABASE_SERVICE_ROLE_KEY` is still empty in `.env.vercel`. Right now `/api/booking/slots` returns 503. | Paste the service-role key, load all 44 variables into Vercel, then redeploy. |
+| B2 | **189 people still hold an active premium pass on the old chat app** (latest expiry 20 Nov 2026), and Razorpay has 819 subscription IDs. 182 of them are anonymous accounts that cannot log in to the new site. | Keep `chat.thedivinetarotonline.com` on the old app and its own Supabase project (Tdt-Ginni) until 20 Nov 2026. Cancel the recurring Razorpay subscriptions so nobody is charged again. |
+| B3 | **The site's database is not prepared.** No SQL has been applied to ginni2 yet, and its 748 reading accounts (305 with an active pass), 711 orders and 9,161 chat messages have not been moved into the site's tables. | Run `supabase/01…04` and `10_unified_platform.sql` in ginni2's SQL editor. Then run `npm run migrate:legacy` as a dry run, then with `--commit` (uses the service-role key; tested locally: old passwords log in, passes, bonus, referrals and the last 30 chats carry over, and a re-run changes nothing). |
+| B4 | **The Vercel project `tdt-final` has no environment variables.** Right now `/api/booking/slots` returns 503. `.env.vercel` is complete (Supabase now points at ginni2; keys verified against its API). | Load all 44 variables into Vercel, then redeploy. |
 | B5 | **The Razorpay webhooks are not registered.** | Create the 3 webhooks listed in the README, each with its own secret. |
 | B6 | **Business details are missing (L16).** | Add the legal entity name, address, a grievance officer's name and email, and the GSTIN if registered to `/terms` and `/contact`. |
 | B7 | **Supabase Auth rate limits are too low.** Sign-ins happen server-side, so every visitor shares a handful of Vercel IPs, and the default per-IP limit would start refusing logins on a busy day. | In Supabase → Authentication → Rate limits, raise the sign-in, sign-up and token-refresh limits. The site already applies its own per-email and per-IP limits. |
 
 ## High (first week)
 
-- Run `supabase/11_harden_after_cutover.sql` once the old chat and reading apps are switched off. It does the following:
-  - revokes anon access to the old SECURITY DEFINER functions;
-  - fixes `search_path`;
-  - makes the `user_retention` and `funnel_summary` views `security_invoker`.
-
-  Then, in the dashboard:
-  - turn off anonymous sign-ins;
-  - turn on leaked-password protection.
-
-  If the two views are readable with the anon key today, revoke them right away: the old apps don't use them.
+- **24 reading accounts are marked as active monthly Razorpay subscribers** (`subscriptionStatus = active`). Their current expiry carries over, but the new site sells one-time 30-day passes and has no handler for subscription renewals. Cancel those subscriptions in Razorpay (or keep extending their pass by hand) before the next renewal date.
+- ginni2 is on the **Free plan**: no downloadable backups and no leaked-password protection. Move it to Pro (daily backups, PITR add-on) before launch traffic, then test a restore.
+- Security Advisor on ginni2: 0 errors, 11 warnings. `11_harden_after_cutover.sql` revokes API access to `rls_auto_enable()`. The other warnings are the mobile app's `tdt_*` functions, which the app calls on purpose; review them with the app's code.
 - Add a DMARC record for `thedivinetarotonline.com`, for example `_dmarc TXT "v=DMARC1; p=none; rua=mailto:<you>"`. SPF and DKIM are already present.
 - The current booking site on Vercel uses `rzp_test_` keys. Confirm that the new project uses the live keys, then make one real ₹1 payment end to end.
 - Substantiate or soften "India's No.1 Psychic Tarot Reader" and "Trusted by 7L+ Seekers" (L12).
 - Confirm whether the displayed prices include GST, and say so next to each price (L10).
-- Turn on Supabase point-in-time recovery or daily backups and test a restore. Add an uptime monitor.
+- Add an uptime monitor.
 - Have a lawyer review the Privacy, Terms and Refund pages.
 - Rotate the old `BOOKING_ADMIN_TOKEN` (`thedivinetarot111`) everywhere it is still used. The new project uses a fresh random token.
 
@@ -100,7 +93,7 @@ This is a technical and compliance checklist, not legal advice.
 | S17 Lockout | PASS | per-email login throttle (10/15 min) with no permanent lock, so real users can't be locked out | — |
 | S18 Security logs | PASS | Supabase Auth audit log; payment, webhook and admin events go to Sentry/console without secrets | — |
 | S19 Cookies | PASS | `sb-…-auth-token` is HttpOnly, Secure in production, SameSite=Lax (verified in the response header) | — |
-| S20 DB permissions | PASS (new schema) / FAIL (live DB today) | new tables: RLS on, own-row reads only, money RPCs callable only by service_role (e2e 401 for anon). Live advisors: SECURITY DEFINER views, anon-callable functions, mutable `search_path`, leaked-password protection off | `11_harden_after_cutover.sql` (High) |
+| S20 DB permissions | PASS | site tables: RLS on, own-row reads only, money RPCs callable only by service_role (e2e 401 for anon). ginni2 today: anon key reads 0 rows from the old Prisma tables; Security Advisor 0 errors, 11 warnings (mobile-app `tdt_*` functions, `rls_auto_enable`) | run `11_harden_after_cutover.sql`; review `tdt_*` with the app |
 | S21 Secrets | FAIL | the new code and client bundle are clean, but the public repo's `_import/*.tgz` exposes the WhatsApp token | Blocker B1 |
 | S22 Dependencies | PASS | `npm audit --omit=dev`: 0 vulnerabilities; Next 15.5.28 | — |
 | S23 Debug leaks | PASS | generic error JSON; production source maps go to Sentry only | — |
@@ -143,4 +136,4 @@ This is a technical and compliance checklist, not legal advice.
 3. B5–B7: webhooks, business details, Auth rate limits.
 4. Make a ₹1 live test: buy the pass, book a personal reading, buy the Kundli report.
 5. Move `thedivinetarotonline.com`, `www`, `reading`, `learn`, `booking` and `support` to this project. Leave `chat` on the old app until 20 Nov 2026.
-6. After 20 Nov 2026, once the subscriptions are cancelled: point `chat` here and run `11_harden_after_cutover.sql`.
+6. After 20 Nov 2026, once the old subscriptions are cancelled: point `chat` here and pause the old Tdt-Ginni project.

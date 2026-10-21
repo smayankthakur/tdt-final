@@ -1,177 +1,235 @@
 #!/usr/bin/env node
 /**
- * One-time move of the old data into the unified Supabase project.
+ * One-time move of the old data into the unified site's tables.
+ *
+ * Works over the Supabase API with the service-role key, so no database
+ * password is needed.
  *
  *  1. Ginni Ki Baatein (old Prisma tables "User", "ChatMessage", "Order",
- *     "NewsletterSubscriber") → auth.users + profiles, chat_messages,
- *     reading_orders, newsletter_subscribers.
- *     Passwords keep working: the old bcrypt hashes are copied into
- *     auth.users.encrypted_password, which Supabase Auth verifies natively.
+ *     "NewsletterSubscriber" in the same Supabase project) → Supabase Auth
+ *     users + profiles, chat_messages (last 30 per reader), reading_orders,
+ *     newsletter_subscribers.
+ *     Passwords keep working: the old bcrypt hashes are handed to Supabase
+ *     Auth as `password_hash`, which it verifies natively.
  *  2. Personal Reading (Firestore orders / bookings / problems / config) →
  *     pr_orders, pr_bookings, pr_problems, pr_config. Only runs when
  *     FIREBASE_SERVICE_ACCOUNT_JSON is set (npm i -D firebase-admin first).
  *
- * Usage (from the project folder):
- *   SUPABASE_DB_URL="postgresql://postgres:<pw>@db.<ref>.supabase.co:5432/postgres" \
- *   LEGACY_DATABASE_URL="<old DIRECT_URL of the reading app>" \
- *   node scripts/migrate-legacy-to-supabase.mjs            # dry run: counts only
- *   node scripts/migrate-legacy-to-supabase.mjs --commit   # actually write
+ * Usage (from the project folder; values are read from .env.local and
+ * .env.migration.local automatically):
+ *   npm run migrate:legacy              # dry run: counts only, writes nothing
+ *   npm run migrate:legacy -- --commit  # actually write
  *
- * Run supabase/10_unified_platform.sql first. Safe to re-run: existing emails,
- * orders, bookings and subscribers are skipped.
+ * Needs SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY.
+ * If the old tables live in a DIFFERENT Supabase project, also set
+ * LEGACY_SUPABASE_URL and LEGACY_SUPABASE_SERVICE_ROLE_KEY.
+ *
+ * Run supabase/10_unified_platform.sql first. Safe to re-run: existing
+ * accounts, orders, bookings, subscribers and chat histories are skipped.
  */
-import pg from 'pg';
+import fs from 'node:fs';
+import { createClient } from '@supabase/supabase-js';
+
+// ---- env -------------------------------------------------------------------
+for (const file of ['.env.local', '.env.migration.local']) {
+  if (!fs.existsSync(file)) continue;
+  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (!m || process.env[m[1]] !== undefined) continue;
+    let v = m[2];
+    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+    process.env[m[1]] = v;
+  }
+}
 
 const COMMIT = process.argv.includes('--commit');
-const TARGET = process.env.SUPABASE_DB_URL;
-const LEGACY = process.env.LEGACY_DATABASE_URL;
-if (!TARGET) {
-  console.error('Set SUPABASE_DB_URL (Supabase → Project Settings → Database → Connection string, "Session" or direct).');
+const URL_ = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!URL_ || !KEY) {
+  console.error('Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (Supabase → Project Settings → API).');
   process.exit(1);
 }
+const opts = { auth: { persistSession: false, autoRefreshToken: false } };
+const db = createClient(URL_, KEY, opts);
+const legacyDb = process.env.LEGACY_SUPABASE_URL && process.env.LEGACY_SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(process.env.LEGACY_SUPABASE_URL, process.env.LEGACY_SUPABASE_SERVICE_ROLE_KEY, opts)
+  : db;
 
 const log = (...a) => console.log(COMMIT ? '[commit]' : '[dry-run]', ...a);
-const ssl = (url) => (/localhost|127\.0\.0\.1|\/tmp/.test(url) ? false : { rejectUnauthorized: false });
+const must = ({ data, error }, what) => {
+  if (error) throw new Error(`${what}: ${error.message}`);
+  return data;
+};
 
-async function tableExists(client, name) {
-  const { rows } = await client.query(`select to_regclass($1) as t`, [`public."${name}"`]);
-  return !!rows[0].t;
+/** All rows of a table (PostgREST pages at 1000). null if the table does not exist. */
+async function readAll(client, table, order = 'createdAt') {
+  const rows = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await client.from(table).select('*').order(order, { ascending: true }).range(from, from + 999);
+    if (error) {
+      if (/does not exist|schema cache|Could not find the table/i.test(error.message)) return null;
+      throw new Error(`read ${table}: ${error.message}`);
+    }
+    rows.push(...data);
+    if (data.length < 1000) return rows;
+  }
 }
 
-async function migrateReadingApp(target) {
-  if (!LEGACY) {
-    log('LEGACY_DATABASE_URL not set — skipping reading-app users.');
+async function allAuthUsersByEmail() {
+  const map = new Map();
+  for (let page = 1; ; page++) {
+    const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw new Error(`list auth users: ${error.message}`);
+    for (const u of data.users) if (u.email) map.set(u.email.toLowerCase(), u.id);
+    if (data.users.length < 1000) return map;
+  }
+}
+
+async function inBatches(rows, size, fn) {
+  for (let i = 0; i < rows.length; i += size) await fn(rows.slice(i, i + size));
+}
+
+const latest = (a, b) => (!a ? b || null : !b ? a : new Date(a) > new Date(b) ? a : b);
+
+// ---- 1. reading app ----------------------------------------------------------
+async function migrateReadingApp() {
+  const users = await readAll(legacyDb, 'User');
+  if (!users) {
+    log('No legacy "User" table found — skipping reading-app users.');
     return;
   }
-  const legacy = LEGACY === TARGET ? target : new pg.Client({ connectionString: LEGACY, ssl: ssl(LEGACY) });
-  if (legacy !== target) await legacy.connect();
-  try {
-    if (!(await tableExists(legacy, 'User'))) {
-      log('No legacy "User" table found — nothing to migrate.');
-      return;
-    }
-    const users = (await legacy.query(`select * from "User" order by "createdAt"`)).rows;
-    const chats = (await tableExists(legacy, 'ChatMessage'))
-      ? (await legacy.query(`select * from "ChatMessage" order by "createdAt"`)).rows : [];
-    const orders = (await tableExists(legacy, 'Order')) ? (await legacy.query(`select * from "Order"`)).rows : [];
-    const subs = (await tableExists(legacy, 'NewsletterSubscriber'))
-      ? (await legacy.query(`select * from "NewsletterSubscriber"`)).rows : [];
-    log(`legacy: ${users.length} users, ${chats.length} chat messages, ${orders.length} orders, ${subs.length} newsletter subscribers`);
+  const chats = (await readAll(legacyDb, 'ChatMessage')) || [];
+  const orders = (await readAll(legacyDb, 'Order')) || [];
+  const subs = (await readAll(legacyDb, 'NewsletterSubscriber')) || [];
+  log(`legacy: ${users.length} users, ${chats.length} chat messages, ${orders.length} orders, ${subs.length} newsletter subscribers`);
 
-    const idMap = new Map(); // legacy cuid -> new uuid
-    let created = 0, existing = 0;
-    for (const u of users) {
-      const email = String(u.email).trim().toLowerCase();
-      const found = await target.query(`select id from auth.users where lower(email) = $1`, [email]);
-      if (found.rows[0]) {
-        // Same email already has a login here (e.g. the old chat app): keep that
-        // login and password, and carry the reading-app pass and credits over.
-        const id = found.rows[0].id;
-        idMap.set(u.id, id);
-        existing++;
-        if (COMMIT) {
-          await target.query(
-            `insert into public.profiles (id, email, name, referral_code, source)
-             values ($1, $2, $3, public.gen_referral_code(), 'legacy-reading') on conflict (id) do nothing`,
-            [id, email, u.name || null]
-          );
-          await target.query(
-            `update public.profiles set
-                name = coalesce(name, $2),
-                readings_used = greatest(readings_used, $3),
-                bonus_readings = bonus_readings + $4,
-                subscription_expires = greatest(subscription_expires, $5::timestamptz),
-                legacy_id = coalesce(legacy_id, $6),
-                source = case when source = 'site' then 'legacy-reading' else source end
-              where id = $1`,
-            [id, u.name || null, u.readingsUsed || 0, u.bonusReadings || 0, u.subscriptionExpires, u.id]
-          );
-        }
-        continue;
-      }
-      if (!COMMIT) { idMap.set(u.id, `new:${u.id}`); created++; continue; }
-      const meta = { name: u.name || null, legacy_id: u.id, referral_code: u.referralCode || null };
-      const { rows } = await target.query(
-        `insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
-            raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-            confirmation_token, recovery_token, email_change, email_change_token_new)
-         values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', $1, $2, now(),
-            '{"provider":"email","providers":["email"]}', $3, $4, now(), '', '', '', '')
-         returning id`,
-        [email, u.passwordHash, JSON.stringify(meta), u.createdAt]
-      );
-      const id = rows[0].id;
-      await target.query(
-        `insert into auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
-         values (gen_random_uuid(), $1, $3, $2, 'email', now(), now(), now())`,
-        [id, JSON.stringify({ sub: id, email, email_verified: true }), String(id)]
-      );
-      await target.query(
-        `update public.profiles set readings_used = $2, bonus_readings = $3, subscription_expires = $4,
-             referral_rewarded = $5, created_at = $6, source = 'legacy-reading' where id = $1`,
-        [id, u.readingsUsed || 0, u.bonusReadings || 0, u.subscriptionExpires, !!u.referralRewarded, u.createdAt]
-      );
-      idMap.set(u.id, id);
-      created++;
-    }
-    log(`users: ${created} to create, ${existing} already in Supabase Auth`);
+  const byEmail = await allAuthUsersByEmail();
+  const idMap = new Map(); // legacy cuid -> auth uuid
+  let created = 0, existing = 0, failed = 0;
 
-    if (COMMIT) {
-      for (const u of users) {
-        if (u.referredByUserId && idMap.get(u.referredByUserId) && idMap.get(u.id)) {
-          await target.query(`update public.profiles set referred_by = $2 where id = $1 and referred_by is null`,
-            [idMap.get(u.id), idMap.get(u.referredByUserId)]);
+  for (const [i, u] of users.entries()) {
+    const email = String(u.email || '').trim().toLowerCase();
+    if (!email) continue;
+    const found = byEmail.get(email);
+
+    if (found) {
+      // This email already has a login here: keep that login and password and
+      // carry the reading-app pass and credits over.
+      idMap.set(u.id, found);
+      existing++;
+      if (COMMIT) {
+        must(await db.from('profiles').upsert(
+          { id: found, email, name: u.name || null, referral_code: await newReferralCode(), source: 'legacy-reading' },
+          { onConflict: 'id', ignoreDuplicates: true }
+        ), 'profile upsert');
+        const p = must(await db.from('profiles').select('*').eq('id', found).single(), 'profile read');
+        if (p.legacy_id !== u.id) {
+          // first time this legacy account is merged in (keeps re-runs from adding bonus twice)
+          must(await db.from('profiles').update({
+            name: p.name || u.name || null,
+            readings_used: Math.max(p.readings_used || 0, u.readingsUsed || 0),
+            bonus_readings: (p.bonus_readings || 0) + (u.bonusReadings || 0),
+            subscription_expires: latest(p.subscription_expires, u.subscriptionExpires),
+            legacy_id: u.id,
+            source: p.source === 'site' ? 'legacy-reading' : p.source,
+          }).eq('id', found), 'profile merge');
         }
       }
+      continue;
     }
 
-    let chatN = 0;
-    for (const m of chats) {
-      const uid = idMap.get(m.userId);
-      if (!uid) continue;
-      chatN++;
-      if (COMMIT) {
-        await target.query(
-          `insert into public.chat_messages (user_id, role, kind, text, card, ai_mode, created_at)
-           select $1, $2, $3, $4, $5, $6, $7
-           where not exists (select 1 from public.chat_messages where user_id = $1 and created_at = $7 and role = $2)`,
-          [uid, m.role, m.kind, m.text ? String(m.text).slice(0, 4000) : null, m.card, !!m.aiMode, m.createdAt]
-        );
-      }
-    }
-    log(`chat messages: ${chatN}`);
+    if (!COMMIT) { idMap.set(u.id, `new:${u.id}`); created++; continue; }
 
-    let orderN = 0;
-    for (const o of orders) {
-      const uid = idMap.get(o.userId);
-      if (!uid) continue;
-      orderN++;
-      if (COMMIT) {
-        await target.query(
-          `insert into public.reading_orders (user_id, razorpay_order_id, amount, status, razorpay_payment_id, paid_at, created_at)
-           values ($1, $2, $3, $4, $5, $6, $7) on conflict (razorpay_order_id) do nothing`,
-          [uid, o.razorpayOrderId, o.amount, o.status === 'paid' ? 'paid' : 'created', o.razorpayPaymentId, o.paidAt, o.createdAt]
-        );
-      }
+    const meta = { name: u.name || null, legacy_id: u.id, referral_code: u.referralCode || null };
+    const attrs = { email, email_confirm: true, user_metadata: meta };
+    if (u.passwordHash) attrs.password_hash = u.passwordHash;
+    let res = await db.auth.admin.createUser(attrs);
+    if (res.error && meta.referral_code) {
+      // e.g. the old referral code is already taken here — retry with a fresh one
+      res = await db.auth.admin.createUser({ ...attrs, user_metadata: { ...meta, referral_code: null } });
     }
-    log(`reading orders: ${orderN}`);
-
-    if (COMMIT) {
-      for (const s of subs) {
-        await target.query(
-          `insert into public.newsletter_subscribers (email, status, source, phone, unsubscribed_at, created_at)
-           values (lower($1), $2, $3, $4, $5, $6) on conflict (email) do nothing`,
-          [s.email, s.unsubscribedAt ? 'unsubscribed' : 'subscribed', s.source || 'reading-app', s.phone, s.unsubscribedAt, s.createdAt]
-        );
-      }
+    if (res.error) {
+      failed++;
+      console.error(`  ! ${email}: ${res.error.message}`);
+      continue;
     }
-    log(`newsletter subscribers: ${subs.length}`);
-  } finally {
-    if (legacy !== target) await legacy.end();
+    const id = res.data.user.id;
+    byEmail.set(email, id);
+    idMap.set(u.id, id);
+    must(await db.from('profiles').update({
+      readings_used: u.readingsUsed || 0,
+      bonus_readings: u.bonusReadings || 0,
+      subscription_expires: u.subscriptionExpires || null,
+      referral_rewarded: !!u.referralRewarded,
+      created_at: u.createdAt,
+      source: 'legacy-reading',
+    }).eq('id', id), 'profile update');
+    created++;
+    if ((i + 1) % 100 === 0) log(`  ${i + 1}/${users.length} users…`);
   }
+  log(`users: ${created} ${COMMIT ? 'created' : 'to create'}, ${existing} already had a login${failed ? `, ${failed} FAILED (see above)` : ''}`);
+
+  if (COMMIT) {
+    for (const u of users) {
+      const me = idMap.get(u.id), ref = idMap.get(u.referredByUserId);
+      if (u.referredByUserId && me && ref) {
+        must(await db.from('profiles').update({ referred_by: ref }).eq('id', me).is('referred_by', null), 'referral');
+      }
+    }
+  }
+
+  // Chat: the site keeps the last 30 messages per reader. A reader whose
+  // history is already here is skipped, so re-runs don't duplicate it.
+  const perUser = new Map();
+  for (const m of chats) {
+    const uid = idMap.get(m.userId);
+    if (!uid) continue;
+    if (!perUser.has(uid)) perUser.set(uid, []);
+    perUser.get(uid).push(m);
+  }
+  let chatN = 0;
+  for (const [uid, list] of perUser) {
+    const last = list.slice(-30);
+    chatN += last.length;
+    if (!COMMIT) continue;
+    const { count } = await db.from('chat_messages').select('id', { count: 'exact', head: true }).eq('user_id', uid);
+    if (count) continue;
+    must(await db.from('chat_messages').insert(last.map((m) => ({
+      user_id: uid, role: m.role, kind: m.kind, text: m.text ? String(m.text).slice(0, 4000) : null,
+      card: m.card ?? null, ai_mode: !!m.aiMode, created_at: m.createdAt,
+    }))), 'chat insert');
+  }
+  log(`chat messages: ${chatN} (last 30 per reader)`);
+
+  const orderRows = orders.filter((o) => idMap.get(o.userId) && o.razorpayOrderId).map((o) => ({
+    user_id: idMap.get(o.userId), razorpay_order_id: o.razorpayOrderId, amount: o.amount,
+    status: o.status === 'paid' ? 'paid' : 'created', razorpay_payment_id: o.razorpayPaymentId || null,
+    paid_at: o.paidAt || null, created_at: o.createdAt,
+  }));
+  if (COMMIT) {
+    await inBatches(orderRows, 500, async (b) =>
+      must(await db.from('reading_orders').upsert(b, { onConflict: 'razorpay_order_id', ignoreDuplicates: true }), 'orders'));
+  }
+  log(`reading orders: ${orderRows.length}`);
+
+  const subRows = [...new Map(subs.filter((s) => s.email).map((s) => [String(s.email).toLowerCase(), {
+    email: String(s.email).toLowerCase(), status: s.unsubscribedAt ? 'unsubscribed' : 'subscribed',
+    source: s.source || 'reading-app', phone: s.phone || null, unsubscribed_at: s.unsubscribedAt || null, created_at: s.createdAt,
+  }])).values()];
+  if (COMMIT) {
+    await inBatches(subRows, 500, async (b) =>
+      must(await db.from('newsletter_subscribers').upsert(b, { onConflict: 'email', ignoreDuplicates: true }), 'subscribers'));
+  }
+  log(`newsletter subscribers: ${subRows.length}`);
 }
 
-async function migrateFirestore(target) {
+async function newReferralCode() {
+  const { data } = await db.rpc('gen_referral_code');
+  return data || Math.random().toString(36).slice(2, 10).toUpperCase();
+}
+
+// ---- 2. personal reading (Firestore) ----------------------------------------
+async function migrateFirestore() {
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (!raw) {
     log('FIREBASE_SERVICE_ACCOUNT_JSON not set — skipping Personal Reading bookings.');
@@ -181,79 +239,78 @@ async function migrateFirestore(target) {
   const { getFirestore } = await import('firebase-admin/firestore');
   const j = JSON.parse(raw);
   initializeApp({ credential: cert({ projectId: j.project_id, clientEmail: j.client_email, privateKey: j.private_key }) });
-  const fs = getFirestore();
+  const store = getFirestore();
   const ms = (v) => (v == null ? null : typeof v === 'number' ? v : v.toMillis ? v.toMillis() : Number(v));
 
-  const orders = await fs.collection('orders').get();
-  log(`firestore orders: ${orders.size}`);
+  const orders = await store.collection('orders').get();
+  const orderRows = orders.docs.map((d) => {
+    const o = d.data();
+    return {
+      bid: d.id, status: o.status === 'paid' ? 'paid' : 'created', tier: o.tier === 'urgent' ? 'urgent' : 'standard',
+      amount: o.amount || 0, held_slot: o.heldSlot || null, origin: o.origin || null, plink_id: o.plinkId || null,
+      payment_id: o.paymentId || null, email: o.email || null, phone: o.phone || null, name: o.name || null,
+      slot: o.slot || null, meet_link: o.meetLink || null, form_done: !!o.formDone,
+      created_at_ms: ms(o.createdAt) || Date.now(), paid_at_ms: ms(o.paidAt), form_at_ms: ms(o.formAt),
+    };
+  });
+  log(`firestore orders: ${orderRows.length}`);
   if (COMMIT) {
-    for (const d of orders.docs) {
-      const o = d.data();
-      await target.query(
-        `insert into public.pr_orders (bid, status, tier, amount, held_slot, origin, plink_id, payment_id, email, phone, name, slot, meet_link, form_done, created_at_ms, paid_at_ms, form_at_ms)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) on conflict (bid) do nothing`,
-        [d.id, o.status === 'paid' ? 'paid' : 'created', o.tier === 'urgent' ? 'urgent' : 'standard', o.amount || 0, o.heldSlot || null,
-         o.origin || null, o.plinkId || null, o.paymentId || null, o.email || null, o.phone || null, o.name || null, o.slot || null,
-         o.meetLink || null, !!o.formDone, ms(o.createdAt) || Date.now(), ms(o.paidAt), ms(o.formAt)]
-      );
-    }
+    await inBatches(orderRows, 500, async (b) =>
+      must(await db.from('pr_orders').upsert(b, { onConflict: 'bid', ignoreDuplicates: true }), 'pr_orders'));
   }
-  const bookings = await fs.collection('bookings').get();
-  log(`firestore bookings: ${bookings.size}`);
-  if (COMMIT) {
-    for (const d of bookings.docs) {
+
+  const known = new Set(orderRows.map((o) => o.bid));
+  const bookings = await store.collection('bookings').get();
+  const bookingRows = bookings.docs
+    .filter((d) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(d.id) && known.has(d.data().bid))
+    .map((d) => {
       const b = d.data();
-      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(d.id)) continue;
-      const exists = await target.query(`select 1 from public.pr_orders where bid = $1`, [b.bid]);
-      if (!exists.rows[0]) continue;
       const answers = { ...(b.answers || {}) };
       delete answers.Slot;
-      await target.query(
-        `insert into public.pr_bookings (slot_key, status, tier, bid, hold_until_ms, name, email, phone, payment_id, form_done, answers,
-            meet_link, event_id, calendar_ok, calendar_err, client_mail_ok, owner_mail_ok, mail_err, created_at_ms)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) on conflict (slot_key) do nothing`,
-        [d.id, b.status === 'confirmed' ? 'confirmed' : 'held', b.tier || 'standard', b.bid, ms(b.holdUntil), b.name || null, b.email || null,
-         b.phone || null, b.paymentId || null, !!b.formDone, JSON.stringify(answers), b.meetLink || null, b.eventId || null,
-         b.calendarOk ?? null, b.calendarErr || null, b.clientMailOk ?? null, b.ownerMailOk ?? null, b.mailErr || null, ms(b.createdAt) || Date.now()]
-      );
-    }
-  }
-  const problems = await fs.collection('problems').get();
-  log(`firestore payment problems: ${problems.size}`);
+      return {
+        slot_key: d.id, status: b.status === 'confirmed' ? 'confirmed' : 'held', tier: b.tier || 'standard', bid: b.bid,
+        hold_until_ms: ms(b.holdUntil), name: b.name || null, email: b.email || null, phone: b.phone || null,
+        payment_id: b.paymentId || null, form_done: !!b.formDone, answers, meet_link: b.meetLink || null,
+        event_id: b.eventId || null, calendar_ok: b.calendarOk ?? null, calendar_err: b.calendarErr || null,
+        client_mail_ok: b.clientMailOk ?? null, owner_mail_ok: b.ownerMailOk ?? null, mail_err: b.mailErr || null,
+        created_at_ms: ms(b.createdAt) || Date.now(),
+      };
+    });
+  log(`firestore bookings: ${bookingRows.length}`);
   if (COMMIT) {
-    for (const d of problems.docs) {
-      const p = d.data();
-      await target.query(`insert into public.pr_problems (bid, plink_id, why, at) values ($1,$2,$3,to_timestamp($4/1000.0))`,
-        [p.bid || null, p.paymentLink || d.id, p.why || null, ms(p.at) || Date.now()]);
-    }
+    await inBatches(bookingRows, 500, async (b) =>
+      must(await db.from('pr_bookings').upsert(b, { onConflict: 'slot_key', ignoreDuplicates: true }), 'pr_bookings'));
   }
-  const cfg = await fs.doc('config/schedule2026').get();
+
+  const problems = await store.collection('problems').get();
+  log(`firestore payment problems: ${problems.size}`);
+  if (COMMIT && problems.size) {
+    const have = must(await db.from('pr_problems').select('plink_id'), 'pr_problems read').map((r) => r.plink_id);
+    const rows = problems.docs
+      .map((d) => ({ d, p: d.data() }))
+      .filter(({ d, p }) => !have.includes(p.paymentLink || d.id))
+      .map(({ d, p }) => ({ bid: p.bid || null, plink_id: p.paymentLink || d.id, why: p.why || null, at: new Date(ms(p.at) || Date.now()).toISOString() }));
+    if (rows.length) must(await db.from('pr_problems').insert(rows), 'pr_problems');
+  }
+
+  const cfg = await store.doc('config/schedule2026').get();
   if (cfg.exists) {
     log('firestore schedule config: found (copied to pr_config)');
-    if (COMMIT) {
-      await target.query(`insert into public.pr_config (id, cfg) values ('schedule2026', $1) on conflict (id) do update set cfg = excluded.cfg`,
-        [JSON.stringify(cfg.data())]);
-    }
+    if (COMMIT) must(await db.from('pr_config').upsert({ id: 'schedule2026', cfg: cfg.data() }, { onConflict: 'id' }), 'pr_config');
   }
 }
 
-const target = new pg.Client({ connectionString: TARGET, ssl: ssl(TARGET) });
-await target.connect();
+// ---- run ---------------------------------------------------------------------
 try {
-  await target.query('begin');
-  await migrateReadingApp(target);
-  await migrateFirestore(target);
-  if (COMMIT) {
-    await target.query('commit');
-    log('done — committed.');
-  } else {
-    await target.query('rollback');
-    log('dry run finished — nothing written. Re-run with --commit.');
+  const ready = await db.from('profiles').select('id', { head: true, count: 'exact' });
+  if (ready.error) {
+    throw new Error(`the site's tables are missing (${ready.error.message}). Run supabase/10_unified_platform.sql in the SQL editor first.`);
   }
+  log(`target: ${URL_}`);
+  await migrateReadingApp();
+  await migrateFirestore();
+  log(COMMIT ? 'done.' : 'dry run finished — nothing written. Re-run with --commit.');
 } catch (err) {
-  await target.query('rollback').catch(() => {});
-  console.error('Migration failed, nothing was written:', err);
+  console.error('Migration stopped:', err.message || err);
   process.exitCode = 1;
-} finally {
-  await target.end();
 }
