@@ -92,12 +92,10 @@ const Footer = () => {
   const quickLinks = [
     { nameKey: 'nav.about', name: 'About', href: '/about' },
     { nameKey: 'nav.reading', name: 'Reading', href: '/reading' },
-    { nameKey: 'footer.quickLinks.pass', name: 'Privacy', href: '/privacy' },
     { nameKey: 'nav.course', name: 'Courses', href: '/courses' },
     { nameKey: 'nav.kundli', name: 'Kundli Milan', href: '/kundli-milan' },
     { nameKey: 'nav.personalReading', name: 'Personal Reading', href: '/personal-reading' },
     { nameKey: 'footer.quickLinks.support', name: 'Support', href: '/support' },
-    { nameKey: 'footer.quickLinks.contact', name: 'Contact', href: '/contact' },
   ];
 
   const legalLinks = [
@@ -198,10 +196,10 @@ const Footer = () => {
               type="submit"
               disabled={isSubmitting || isSuccess}
               className={`w-full py-3 rounded-lg font-semibold text-sm transition-all duration-300 ${isSuccess
-                  ? 'bg-green-600 text-white cursor-default'
-                  : isSubmitting
-                    ? 'bg-amber-500/60 text-black cursor-wait'
-                    : 'bg-amber-500 text-black hover:bg-amber-400 hover:shadow-lg hover:shadow-amber-500/20'
+                ? 'bg-green-600 text-white cursor-default'
+                : isSubmitting
+                  ? 'bg-amber-500/60 text-black cursor-wait'
+                  : 'bg-amber-500 text-black hover:bg-amber-400 hover:shadow-lg hover:shadow-amber-500/20'
                 }`}
             >
               {isSuccess ? t('footer.form.subscribed') : isSubmitting ? t('footer.form.subscribing') : t('footer.form.subscribe')}
