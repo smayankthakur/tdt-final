@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { COOKIE } from "@/lib/booking/session";
 import ReadingForm from "@/components/booking/ReadingForm";
 export const metadata = { title: "Personal Reading Form", robots: { index: false, follow: false } };
 
@@ -12,10 +14,13 @@ export default async function FormPage(
     const q = new URLSearchParams(Object.entries(searchParams).flatMap(([k, v]) => (typeof v === "string" ? [[k, v]] : [])));
     redirect(`/api/booking/pay-return?${q}`);
   }
+  // No booking cookie = no payment on this device: show "pay first" straight
+  // away instead of a loading card.
+  const hasBooking = !!(await cookies()).get(COOKIE)?.value;
   return (
     <div className="form-page">
       <div className="container form-wrap">
-        <ReadingForm />
+        <ReadingForm hasBooking={hasBooking} />
       </div>
     </div>
   );

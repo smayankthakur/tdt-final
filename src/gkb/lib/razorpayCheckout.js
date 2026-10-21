@@ -11,6 +11,7 @@
 // server verifies the payment, onUnlocked fires with the new access state.
 
 import { PASS_PRICE_INR, PASS_DAYS } from "@/gkb/lib/pricing";
+import { loadRazorpayScript } from "@/lib/razorpay/client";
 
 export const MONTHLY_PRICE_INR = PASS_PRICE_INR; // legacy name
 export { PASS_PRICE_INR, PASS_DAYS };
@@ -31,12 +32,17 @@ export { PASS_PRICE_INR, PASS_DAYS };
  * loading state. Everything after `rzp.open()` reports via the callbacks.
  */
 export async function startSubscriptionCheckout({ name, onUnlocked, onError, onDismiss }) {
-  const orderRes = await fetch("/api/create-order", { method: "POST" });
+  // Razorpay's script is loaded only when someone actually pays (in parallel
+  // with creating the order), not on every visit to /reading.
+  const [orderRes, scriptOk] = await Promise.all([
+    fetch("/api/create-order", { method: "POST" }),
+    loadRazorpayScript(),
+  ]);
   const order = await orderRes.json();
   if (!orderRes.ok) throw new Error(order.error || "Could not start payment.");
 
-  if (typeof window.Razorpay === "undefined") {
-    throw new Error("Payment isn't ready yet — please try again in a moment.");
+  if (!scriptOk || typeof window.Razorpay === "undefined") {
+    throw new Error("Payment window could not load — please check your connection and try again.");
   }
 
   const rzp = new window.Razorpay({

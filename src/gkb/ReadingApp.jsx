@@ -28,14 +28,17 @@ function saveLang(lang) {
 // Site language (header EN / हिंदी / Hinglish switch) -> reading language.
 const SITE_TO_READING = { en: "english", hi: "hindi", hinglish: "hinglish" };
 
-/** @param {{ fallback?: import("react").ReactNode }} props */
-export default function ReadingApp({ fallback = null }) {
+/** @param {{ fallback?: import("react").ReactNode, initialMe?: { loggedIn: boolean } | null }} props */
+export default function ReadingApp({ fallback = null, initialMe = null }) {
   const siteLang = useLanguageStore((s) => s.language);
   // /reading?upgrade=1 (from /premium and other "unlock" links) opens checkout.
   const [wantsUpgrade] = useState(() =>
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("upgrade") === "1"
   );
-  const [me, setMe] = useState(null); // null while loading; {loggedIn, ...access} once known
+  // null while the session is being confirmed; the server passes
+  // {loggedIn:false} when there is no session cookie, so the login screen
+  // is in the first HTML (no flash of other content).
+  const [me, setMe] = useState(initialMe); // {loggedIn, ...access} once known
   const [session, setSession] = useState(null); // {name, lang} — onboarding personalization, separate from auth
   const [activeTopic, setActiveTopic] = useState(null); // highlight only — the chat below is the source of truth
   const [pendingAsk, setPendingAsk] = useState(null); // {text, nonce} — a sidebar click waiting to be sent
@@ -66,7 +69,8 @@ export default function ReadingApp({ fallback = null }) {
   }
 
   useEffect(() => {
-    fetch("/api/auth/me")
+    if (initialMe) return; // already known on the server: logged out
+    fetch("/api/auth/me", { cache: "no-store" })
       .then((r) => r.json())
       .then(applyMe)
       .catch(() => setMe({ loggedIn: false }));
@@ -108,8 +112,8 @@ export default function ReadingApp({ fallback = null }) {
   }, [siteLang]);
 
   if (me === null) {
-    // Server-rendered intro (h1, question list) stays visible while the
-    // session check resolves — search engines and slow phones see real content.
+    // A visitor with a session cookie: a neutral "loading" card (same shape
+    // as the login card) while /api/auth/me confirms it.
     return fallback;
   }
 

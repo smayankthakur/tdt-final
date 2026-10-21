@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import DeleteAccountForm from '@/components/support/DeleteAccountForm';
 import DeleteNowPanel from '@/components/support/DeleteNowPanel';
+import { hasSessionCookie } from '@/lib/supabase/sessionHint';
 
 export const metadata: Metadata = {
   title: 'Delete your account',
@@ -9,7 +10,10 @@ export const metadata: Metadata = {
 };
 
 // Public page required by Google Play ("account deletion URL") for The Divine Tarot app.
-export default function DeleteAccountPage() {
+export default async function DeleteAccountPage() {
+  // With a session cookie, space for the "delete now" panel is reserved from
+  // the first paint, so the options below don't jump down when it appears.
+  const maybeSignedIn = await hasSessionCookie();
   return (
     <div className="relative">
       <div className="relative z-10 mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10 md:py-16">
@@ -22,7 +26,7 @@ export default function DeleteAccountPage() {
           </p>
         </div>
 
-        <DeleteNowPanel />
+        <DeleteNowPanel maybeSignedIn={maybeSignedIn} />
 
         <section className="rounded-2xl border border-white/10 bg-[#121212]/70 p-6 space-y-3">
           <h2 className="text-lg font-semibold text-white">Option 1 — in the app (instant)</h2>

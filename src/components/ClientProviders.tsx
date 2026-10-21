@@ -5,16 +5,17 @@ import { useLanguageStore } from '@/store/languageStore';
 import { getDefaultLanguage } from '@/lib/i18n/getDefaultLanguage';
 
 /**
- * Applies the visitor's saved language AFTER hydration. The store always
- * starts at 'en' so the server HTML and the first client render match
- * (reading localStorage during render was a source of React #418 errors).
+ * The server renders the language from the `lang` cookie. Visitors who chose a
+ * language before that cookie existed (saved only in localStorage), or whose
+ * phone is set to Hindi, get it applied once here — and the cookie is written,
+ * so from the next page on it is rendered by the server with no switch.
  */
 export default function ClientProviders({ children }: { children: React.ReactNode }) {
   useEffect(() => {
+    const hasCookie = /(?:^|;\s*)lang=(en|hi|hinglish)/.test(document.cookie);
+    if (hasCookie) return;
     const saved = getDefaultLanguage();
-    if (saved !== useLanguageStore.getState().language) {
-      useLanguageStore.setState({ language: saved }); // apply without re-persisting
-    }
+    useLanguageStore.getState().setLanguage(saved); // also writes the cookie
   }, []);
   return <>{children}</>;
 }

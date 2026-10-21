@@ -36,8 +36,8 @@ function Person({ n, on, toggle }: { n: "2" | "3"; on: boolean; toggle: () => vo
     </div>);
 }
 
-export default function ReadingForm() {
-  const [waited, setWaited] = useState(false), [bid, setBid] = useState(""), [bk, setBk] = useState<any>(null);
+export default function ReadingForm({ hasBooking = true }: { hasBooking?: boolean }) {
+  const [waited, setWaited] = useState(false), [bid, setBid] = useState(""), [bk, setBk] = useState<any>(hasBooking ? null : { status: "unknown" });
   const [busy, setBusy] = useState(false), [err, setErr] = useState(""), [shake, setShake] = useState(0), [done, setDone] = useState<any>(null);
   // Slot is auto-assigned (earliest free one). undefined = loading, null = nothing free.
   const [next, setNext] = useState<{ date: string; time: string } | null | undefined>(undefined);
@@ -49,7 +49,8 @@ export default function ReadingForm() {
 
   useEffect(() => {
     // The booking comes from a secure cookie set after payment — nothing in the URL.
-    if (window.location.search) window.history.replaceState(null, "", "/form");
+    if (window.location.search) window.history.replaceState(null, "", window.location.pathname);
+    if (!hasBooking) return;
     let n = 0;
     const check = async () => { try { const j = await (await fetch("/api/booking/booking", { cache: "no-store" })).json(); setBk(j); if (j.bid) setBid(j.bid); return j.status; } catch { return "created"; } };
     check();

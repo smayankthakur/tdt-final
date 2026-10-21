@@ -4,7 +4,9 @@ import ClientLayout from "./client-layout";
 import ErrorBoundary from "@/components/system/ErrorBoundary";
 import FooterJsonLd from "@/components/layout/FooterJsonLd";
 import "./globals.css";
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
+import { LanguageProvider } from '@/store/languageStore';
+import { LANG_COOKIE, isSiteLanguage } from '@/lib/i18n/langCookie';
 
 async function getNonce(): Promise<string | undefined> {
   try {
@@ -112,9 +114,13 @@ export default async function RootLayout({
   // Reading the request headers keeps every page dynamically rendered, which is
   // what lets Next.js stamp the per-request CSP nonce (set in middleware) on its scripts.
   await getNonce();
+  // The visitor's language choice (cookie set by the language switch) is
+  // rendered on the server, so Hindi / Hinglish pages never flash English first.
+  const saved = (await cookies()).get(LANG_COOKIE)?.value;
+  const lang = isSiteLanguage(saved) ? saved : 'en';
 
   return (
-    <html lang="en">
+    <html lang={lang === 'hi' ? 'hi' : 'en'}>
       <head>
         {/* Brand fonts. The design tokens (Cinzel / Playfair Display / Inter,
             Cormorant Garamond for booking, Noto Sans Devanagari for Hindi) were
@@ -142,7 +148,9 @@ export default async function RootLayout({
           clarityId={process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID}
         />
         <ErrorBoundary>
-          <ClientLayout>{children}</ClientLayout>
+          <LanguageProvider initial={lang}>
+            <ClientLayout>{children}</ClientLayout>
+          </LanguageProvider>
         </ErrorBoundary>
       </body>
     </html>

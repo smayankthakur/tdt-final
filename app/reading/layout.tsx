@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import Script from 'next/script';
 import '@/gkb/styles/gkb.css';
 
 export const metadata: Metadata = {
@@ -28,7 +27,6 @@ export default function ReadingLayout({ children }: { children: React.ReactNode 
   return (
     <>
       {children}
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
     </>
   );
 }

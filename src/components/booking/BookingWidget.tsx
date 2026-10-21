@@ -16,7 +16,7 @@ export default function BookingWidget({ price, tier = "standard" }: { price: str
   useEffect(() => {
     if (!urgent && new URLSearchParams(window.location.search).get("payment") === "failed") {
       setErr("Payment complete nahi hua. Dobara try karein.");
-      window.history.replaceState(null, "", "/#book");
+      window.history.replaceState(null, "", window.location.pathname + "#book");
     }
     fetch(`/api/booking/slots?tier=${tier}`, { cache: "no-store" }).then((r) => r.json()).then((j) => setNext(j.available ? j.next : null)).catch(() => setNext(null));
   }, [urgent, tier]);
