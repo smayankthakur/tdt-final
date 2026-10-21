@@ -145,7 +145,7 @@ Analytics only load after a visitor clicks **Accept** on the cookie banner. The 
 | Variable | Notes |
 | --- | --- |
 | `CLEANUP_PROTECTED_EMAILS` | comma list never auto-deleted (default `dev.sitelytc@gmail.com,demo@ginnikibaatein.com`). Accounts that never buy a pass are deleted 24–48 h after signup; admins are always skipped |
-| `APP_STORE_URL` | iPhone app link for `/app` once it is live |
+| `APP_STORE_URL`, `PLAY_STORE_URL` | store links for `/app` once the apps are live; until then `/app` opens `/reading` |
 
 ## After setting everything
 
