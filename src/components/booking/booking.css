@@ -862,3 +862,8 @@
 .bk .hero-price .hp-lines{ text-align: center; }}
 /* Unified-site additions */
 .bk .pay-failed-banner{background:#3a1212;border-bottom:1px solid rgba(255,77,77,.4);color:#ffd7d7;padding:12px 20px;text-align:center;font-size:14px;}
+
+/* The old booking site had no Tailwind reset: its numbered and bulleted lists
+   kept the browser's markers. */
+.bk :where(ol) { list-style: decimal; }
+.bk :where(ul:not([role])) { list-style: disc; }

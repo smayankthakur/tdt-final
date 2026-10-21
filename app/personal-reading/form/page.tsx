@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { COOKIE } from "@/lib/booking/session";
 import ReadingForm from "@/components/booking/ReadingForm";
@@ -20,6 +21,7 @@ export default async function FormPage(
   return (
     <div className="form-page">
       <div className="container form-wrap">
+        <Link href="/" className="form-brand"><img src="/logo.png" alt="The Divine Tarot" /><span>The Divine Tarot</span></Link>
         <ReadingForm hasBooking={hasBooking} />
       </div>
     </div>

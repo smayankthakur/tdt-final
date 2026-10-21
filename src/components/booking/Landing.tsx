@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import BookingWidget from "@/components/booking/BookingWidget";
 import StickyBook from "@/components/booking/StickyBook";
 import PayButton from "@/components/booking/PayButton";
@@ -53,6 +54,35 @@ export default function Landing({ offer }: { offer: boolean }) {
     <>
       <ResumeBanner />
 
+      {/* NAV — the old booking site's own header */}
+      <nav className="navbar">
+        <div className="container navbar-inner">
+          <Link href="/" className="brand">
+            <img src="/logo.png" alt="The Divine Tarot" className="mark" />
+            <span>
+              The Divine Tarot
+              <small>Premium Tarot Guidance</small>
+            </span>
+          </Link>
+
+          <div className="nav-links">
+            <Link href="/">Home</Link>
+            <Link href="/about">About</Link>
+            <Link href="/reading">Reading</Link>
+            <Link href="/courses">Course</Link>
+            <Link href="/kundli-milan">Kundli Milan</Link>
+            <Link href="/personal-reading" className="active">Personal Reading</Link>
+          </div>
+
+          <div className="nav-right">
+            <Link href="/reading" className="nav-cta">
+              <span className="nav-cta-long">Ask your question here</span>
+              <span className="nav-cta-short">Ask now</span>
+            </Link>
+          </div>
+        </div>
+      </nav>
+
       {/* HERO — 50/50 image + text, matching thedivinetarotonline.com's split layout */}
       <section className="hero-split">
         <div className="container hero-split-inner">
@@ -76,7 +106,7 @@ export default function Landing({ offer }: { offer: boolean }) {
           <div className="hero-copy">
             <div className="eyebrow">The Divine Tarot</div>
             <p className="namaste">Namaste, main hu Bharti Singh</p>
-            <h1>Personal Tarot &amp; Astrology Reading with Bharti Singh</h1>
+            <h1>India&rsquo;s No.1 Psychic Tarot Reader</h1>
             <p className="sub">
               Expert in Tarot, Astro, Numero, Hoodoo, Runes, Dice, Coffee Cup,
               Psychic Ability, Face Analysis, Candle Wax Reading, Kundli Analysis,
@@ -216,7 +246,102 @@ export default function Landing({ offer }: { offer: boolean }) {
         </div>
       </section>
 
+
+      {/* FOOTER — the old booking site's own footer */}
+      <footer>
+        <div className="container footer-grid">
+          <div className="footer-brand">
+            <Link href="/" className="brand">
+              <img src="/logo.png" alt="The Divine Tarot" className="mark" />
+              <span>
+                The Divine Tarot
+                <small>Premium Tarot Guidance</small>
+              </span>
+            </Link>
+            <p className="footer-tagline">Clarity for your path. Guidance for your soul.</p>
+          </div>
+
+          <div className="footer-col">
+            <div className="footer-heading">Quick Links</div>
+            <ul className="footer-links">
+              <li><Link href="/about">About</Link></li>
+              <li><Link href="/reading">Readings</Link></li>
+              <li><Link href="/premium">Premium</Link></li>
+            </ul>
+          </div>
+
+          <div className="footer-col">
+            <div className="footer-heading">Connect With Us</div>
+            <div className="social-row">
+              <a href="https://instagram.com/thedivineetarot" target="_blank" rel="noreferrer" aria-label="Instagram">◎</a>
+              <a href="https://facebook.com/profile.php?id=61578567343068" target="_blank" rel="noreferrer" aria-label="Facebook">f</a>
+              <a href="https://youtube.com/@TheDivineTarot" target="_blank" rel="noreferrer" aria-label="YouTube">▶</a>
+              <a href="https://youtube.com/@thedivineetarot" target="_blank" rel="noreferrer" aria-label="YouTube (2nd Channel)">▶</a>
+            </div>
+            <Link href="/privacy" className="footer-privacy-link">Privacy</Link>
+          </div>
+
+          <div className="footer-col">
+            <div className="footer-heading">Get Daily Divine Insights</div>
+            <NewsletterForm />
+          </div>
+        </div>
+
+        <div className="trust-row">
+          <span>🔒 Secure &amp; Private Readings</span>
+          <span>♡ Trusted by 7L+ Seekers</span>
+          <span>✦ Authentic Spiritual Guidance</span>
+        </div>
+
+        <div className="footer-bottom">
+          <span>Designed by <a href="https://sitelytc.com/" target="_blank" rel="noreferrer">Sitelytc</a></span>
+          <span className="footer-bottom-right">
+            <Link href="/privacy">Privacy</Link> · © {new Date().getFullYear()} The Divine Tarot. All rights reserved.
+          </span>
+        </div>
+      </footer>
+
       <StickyBook price={price} />
     </>
+  );
+}
+
+/** The old footer form looked the same but did nothing; this one subscribes (same API as the main site). */
+function NewsletterForm() {
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [state, setState] = useState<"idle" | "busy" | "done">("idle");
+  const [error, setError] = useState("");
+  return (
+    <form
+      className="newsletter-form"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        setError("");
+        setState("busy");
+        try {
+          const res = await fetch("/api/subscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email.trim(), whatsapp: phone.replace(/[^\d+]/g, "") || undefined }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || data.message || "Something went wrong. Please try again.");
+          setEmail("");
+          setPhone("");
+          setState("done");
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+          setState("idle");
+        }
+      }}
+    >
+      <input type="email" placeholder="Your email" aria-label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+      <input type="tel" placeholder="WhatsApp number (optional)" aria-label="WhatsApp number" value={phone} onChange={(e) => setPhone(e.target.value)} />
+      <button type="submit" className="btn gold" style={{ width: "100%", justifyContent: "center" }} disabled={state === "busy"}>
+        {state === "done" ? "Subscribed ✓" : "Subscribe"}
+      </button>
+      {error && <p role="alert" style={{ color: "#fca5a5", fontSize: 13, marginTop: 6 }}>{error}</p>}
+    </form>
   );
 }

@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import SupportBanner from '@/components/support/SupportBanner';
 import SupportForm from '@/components/support/SupportForm';
 
@@ -20,11 +19,6 @@ export default function SupportPage() {
       <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col gap-10 px-4 py-10 md:py-16">
         <SupportBanner />
         <SupportForm />
-        <p className="text-center text-sm text-slate-400">
-          Want to delete your account? See <Link href="/delete-account" className="text-[#FFD700] underline-offset-2 hover:underline">Delete your account</Link>.
-          {' '}Policies: <Link href="/terms" className="text-[#FFD700] underline-offset-2 hover:underline">Terms</Link> ·{' '}
-          <Link href="/refund-policy" className="text-[#FFD700] underline-offset-2 hover:underline">Refund &amp; Cancellation</Link>
-        </p>
       </div>
     </div>
   );

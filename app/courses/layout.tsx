@@ -1,4 +1,4 @@
-/** Brand fonts on, as on the old learn. / support. sites (see src/lib/fonts.ts). */
-export default function SectionLayout({ children }: { children: React.ReactNode }) {
-  return <div className="brand-fonts">{children}</div>;
+/** The course pages carry their own header and footer (the old learn site's). */
+export default function CoursesLayout({ children }: { children: React.ReactNode }) {
+  return children;
 }
