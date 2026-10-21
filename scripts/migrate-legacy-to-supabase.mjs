@@ -49,7 +49,10 @@ if (!URL_ || !KEY) {
   console.error('Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (Supabase → Project Settings → API).');
   process.exit(1);
 }
-const opts = { auth: { persistSession: false, autoRefreshToken: false } };
+// Every API call gives up after 30 s so a stalled request can't hang the run;
+// whatever failed is picked up by simply running the script again.
+const timedFetch = (url, init = {}) => fetch(url, { ...init, signal: AbortSignal.timeout(30000) });
+const opts = { auth: { persistSession: false, autoRefreshToken: false }, global: { fetch: timedFetch } };
 const db = createClient(URL_, KEY, opts);
 const legacyDb = process.env.LEGACY_SUPABASE_URL && process.env.LEGACY_SUPABASE_SERVICE_ROLE_KEY
   ? createClient(process.env.LEGACY_SUPABASE_URL, process.env.LEGACY_SUPABASE_SERVICE_ROLE_KEY, opts)
@@ -80,7 +83,7 @@ async function allAuthUsersByEmail() {
   for (let page = 1; ; page++) {
     const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 });
     if (error) throw new Error(`list auth users: ${error.message}`);
-    for (const u of data.users) if (u.email) map.set(u.email.toLowerCase(), u.id);
+    for (const u of data.users) if (u.email) map.set(u.email.toLowerCase(), { id: u.id, mobileTwin: !!u.app_metadata?.ginni_user_id });
     if (data.users.length < 1000) return map;
   }
 }
@@ -105,26 +108,46 @@ async function migrateReadingApp() {
 
   const byEmail = await allAuthUsersByEmail();
   const idMap = new Map(); // legacy cuid -> auth uuid
-  let created = 0, existing = 0, failed = 0;
+  let created = 0, existing = 0, failed = 0, synced = 0;
 
-  for (const [i, u] of users.entries()) {
+  const profiles = new Map(((await readAll(db, 'profiles', 'created_at')) || []).map((p) => [p.id, p]));
+  let done = 0;
+  const processUser = async (u) => {
     const email = String(u.email || '').trim().toLowerCase();
-    if (!email) continue;
+    if (!email) return;
     const found = byEmail.get(email);
 
     if (found) {
-      // This email already has a login here: keep that login and password and
-      // carry the reading-app pass and credits over.
-      idMap.set(u.id, found);
+      // This email already has a login here: carry the reading-app pass and
+      // credits over. If that login is the mobile app's twin of this reading
+      // account, the website password (the one the reader knows) wins;
+      // otherwise the existing password is kept.
+      const foundId = found.id;
+      idMap.set(u.id, foundId);
       existing++;
+      const known = profiles.get(foundId);
+      if (!found.mobileTwin && known && known.legacy_id === u.id && known.source !== 'site') {
+        // Moved by an earlier run. Only carry over a pass bought on the old site since then.
+        const newer = latest(known.subscription_expires, u.subscriptionExpires);
+        if (COMMIT && newer && newer !== known.subscription_expires) {
+          must(await db.from('profiles').update({ subscription_expires: newer }).eq('id', foundId), 'pass refresh');
+        }
+        return;
+      }
+      if (found.mobileTwin && u.passwordHash) {
+        synced++;
+        if (COMMIT) must(await db.rpc('migrate_set_password_hash', { p_user: foundId, p_hash: u.passwordHash }), 'password sync');
+      }
       if (COMMIT) {
+        const found = foundId;
         must(await db.from('profiles').upsert(
           { id: found, email, name: u.name || null, referral_code: await newReferralCode(), source: 'legacy-reading' },
           { onConflict: 'id', ignoreDuplicates: true }
         ), 'profile upsert');
         const p = must(await db.from('profiles').select('*').eq('id', found).single(), 'profile read');
-        if (p.legacy_id !== u.id) {
-          // first time this legacy account is merged in (keeps re-runs from adding bonus twice)
+        if (p.legacy_id !== u.id || p.source === 'site') {
+          // first time this legacy account is merged in (keeps re-runs from adding bonus twice;
+          // source 'site' = created by an earlier run that stopped before copying the pass)
           must(await db.from('profiles').update({
             name: p.name || u.name || null,
             readings_used: Math.max(p.readings_used || 0, u.readingsUsed || 0),
@@ -135,10 +158,10 @@ async function migrateReadingApp() {
           }).eq('id', found), 'profile merge');
         }
       }
-      continue;
+      return;
     }
 
-    if (!COMMIT) { idMap.set(u.id, `new:${u.id}`); created++; continue; }
+    if (!COMMIT) { idMap.set(u.id, `new:${u.id}`); created++; return; }
 
     const meta = { name: u.name || null, legacy_id: u.id, referral_code: u.referralCode || null };
     const attrs = { email, email_confirm: true, user_metadata: meta };
@@ -151,10 +174,10 @@ async function migrateReadingApp() {
     if (res.error) {
       failed++;
       console.error(`  ! ${email}: ${res.error.message}`);
-      continue;
+      return;
     }
     const id = res.data.user.id;
-    byEmail.set(email, id);
+    byEmail.set(email, { id, mobileTwin: false });
     idMap.set(u.id, id);
     must(await db.from('profiles').update({
       readings_used: u.readingsUsed || 0,
@@ -165,9 +188,16 @@ async function migrateReadingApp() {
       source: 'legacy-reading',
     }).eq('id', id), 'profile update');
     created++;
-    if ((i + 1) % 100 === 0) log(`  ${i + 1}/${users.length} users…`);
-  }
-  log(`users: ${created} ${COMMIT ? 'created' : 'to create'}, ${existing} already had a login${failed ? `, ${failed} FAILED (see above)` : ''}`);
+  };
+  // 6 at a time; each user is independent.
+  const queue = [...users];
+  await Promise.all(Array.from({ length: 6 }, async () => {
+    while (queue.length) {
+      await processUser(queue.shift());
+      if (++done % 100 === 0) log(`  ${done}/${users.length} users…`);
+    }
+  }));
+  log(`users: ${created} ${COMMIT ? 'created' : 'to create'}, ${existing} already had a login (${synced} mobile-app logins ${COMMIT ? 'given' : 'to get'} the website password)${failed ? `, ${failed} FAILED (see above)` : ''}`);
 
   if (COMMIT) {
     for (const u of users) {
@@ -187,19 +217,27 @@ async function migrateReadingApp() {
     if (!perUser.has(uid)) perUser.set(uid, []);
     perUser.get(uid).push(m);
   }
-  let chatN = 0;
-  for (const [uid, list] of perUser) {
-    const last = list.slice(-30);
-    chatN += last.length;
-    if (!COMMIT) continue;
-    const { count } = await db.from('chat_messages').select('id', { count: 'exact', head: true }).eq('user_id', uid);
-    if (count) continue;
-    must(await db.from('chat_messages').insert(last.map((m) => ({
-      user_id: uid, role: m.role, kind: m.kind, text: m.text ? String(m.text).slice(0, 4000) : null,
-      card: m.card ?? null, ai_mode: !!m.aiMode, created_at: m.createdAt,
-    }))), 'chat insert');
+  const haveChat = new Set();
+  if (COMMIT) {
+    for (let from = 0; ; from += 1000) {
+      const rows = must(await db.from('chat_messages').select('user_id').order('id').range(from, from + 999), 'chat read');
+      rows.forEach((r) => haveChat.add(r.user_id));
+      if (rows.length < 1000) break;
+    }
   }
-  log(`chat messages: ${chatN} (last 30 per reader)`);
+  const chatRows = [];
+  for (const [uid, list] of perUser) {
+    if (haveChat.has(uid)) continue;
+    for (const m of list.slice(-30)) {
+      chatRows.push({
+        user_id: uid, role: m.role, kind: m.kind, text: m.text ? String(m.text).slice(0, 4000) : null,
+        card: m.card ?? null, ai_mode: !!m.aiMode, created_at: m.createdAt,
+      });
+    }
+  }
+  const chatN = chatRows.length;
+  if (COMMIT) await inBatches(chatRows, 500, async (b) => must(await db.from('chat_messages').insert(b), 'chat insert'));
+  log(`chat messages: ${chatN} (last 30 per reader, skipping readers whose history is already here)`);
 
   const orderRows = orders.filter((o) => idMap.get(o.userId) && o.razorpayOrderId).map((o) => ({
     user_id: idMap.get(o.userId), razorpay_order_id: o.razorpayOrderId, amount: o.amount,

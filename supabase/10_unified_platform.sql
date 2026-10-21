@@ -505,3 +505,19 @@ grant execute on function public.pr_mark_paid(text, text, text, text, text, bigi
 grant execute on function public.pr_claim_slot(text, text[], text, text, text, json, bigint) to service_role;
 grant execute on function public.rate_hit(text, integer, integer) to service_role;
 grant execute on function public.gen_referral_code() to service_role;
+
+-- One-time data move helper (scripts/migrate-legacy-to-supabase.mjs): when a
+-- reading-app account already has a Supabase Auth twin created by the mobile
+-- app (app_metadata.ginni_user_id), the website password (bcrypt hash in the
+-- old "User" table) becomes the login password. Server-only.
+create or replace function public.migrate_set_password_hash(p_user uuid, p_hash text) returns boolean
+language plpgsql security definer set search_path = public, auth as $$
+begin
+  if p_hash is null or p_hash !~ '^\$2[aby]\$\d\d\$' then
+    return false;
+  end if;
+  update auth.users set encrypted_password = p_hash, updated_at = now() where id = p_user;
+  return found;
+end $$;
+revoke all on function public.migrate_set_password_hash(uuid, text) from public, anon, authenticated;
+grant execute on function public.migrate_set_password_hash(uuid, text) to service_role;
