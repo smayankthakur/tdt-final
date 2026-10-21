@@ -4,7 +4,7 @@ import SupportBanner from '@/components/support/SupportBanner';
 import SupportForm from '@/components/support/SupportForm';
 
 export const metadata: Metadata = {
-  title: 'Support',
+  title: 'Support — Payments, Login & Bookings',
   description:
     'Locked out after buying a reading pass, double charged, a booking or course question, or found a bug? Open a support ticket and we reply within 24 hours.',
   alternates: { canonical: '/support' },

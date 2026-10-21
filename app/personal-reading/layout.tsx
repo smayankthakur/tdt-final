@@ -1,11 +1,10 @@
 import type { Metadata } from 'next';
 import '@/components/booking/booking.css';
-import BrandFonts from '@/components/system/BrandFonts';
 
 export const metadata: Metadata = {
   title: 'Book a Personal Reading with Bharti Singh',
   description:
-    'Book a 40-minute personal voice-call reading with Bharti Singh on Google Meet — Tarot, Astrology, Numerology, Kundli analysis and psychic guidance for up to 3 people. Urgent slots within 48 hours.',
+    '40-minute voice-call reading with Bharti Singh on Google Meet — tarot, astrology, numerology and Kundli for up to 3 people. Urgent slots within 48 hours.',
   alternates: { canonical: '/personal-reading' },
   openGraph: {
     title: 'Personal Reading with Bharti Singh | The Divine Tarot',
@@ -18,7 +17,6 @@ export const metadata: Metadata = {
 export default function PersonalReadingLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="bk brand-fonts">
-      <BrandFonts />
       {children}
     </div>
   );

@@ -7,6 +7,7 @@ import "./globals.css";
 import { headers, cookies } from 'next/headers';
 import { LanguageProvider } from '@/store/languageStore';
 import { LANG_COOKIE, isSiteLanguage } from '@/lib/i18n/langCookie';
+import { brandFontVariables } from '@/lib/fonts';
 
 async function getNonce(): Promise<string | undefined> {
   try {
@@ -23,11 +24,11 @@ const SITE_NAME = 'The Divine Tarot';
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'The Divine Tarot | Premium Tarot Readings in English, Hindi & Hinglish',
+    default: 'The Divine Tarot — Tarot Readings in Hindi, Hinglish & English',
     template: '%s | The Divine Tarot',
   },
   description:
-    'Get answers from the universe in seconds. Experience mystical, emotionally intelligent tarot readings for love, career and life — in English, Hindi and Hinglish.',
+    'Ask Ginni your question and get a tarot reading in Hindi, Hinglish or English. Book a call with Bharti Singh, learn tarot, or check your Kundli Milan.',
   applicationName: SITE_NAME,
   authors: [{ name: 'The Divine Tarot' }, { name: 'Bharti Singh' }],
   creator: SITE_NAME,
@@ -120,7 +121,7 @@ export default async function RootLayout({
   const lang = isSiteLanguage(saved) ? saved : 'en';
 
   return (
-    <html lang={lang === 'hi' ? 'hi' : 'en'}>
+    <html lang={lang === 'hi' ? 'hi' : 'en'} className={brandFontVariables}>
       <body
         className="text-[rgb(var(--foreground))]"
         suppressHydrationWarning

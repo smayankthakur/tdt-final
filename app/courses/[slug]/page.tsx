@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { permanentRedirect } from 'next/navigation';
 import EnrolButton from '@/components/courses/EnrolButton';
 import { getCourse, isBookingClosed, priceNumber } from '@/lib/courses/data';
 
@@ -31,7 +31,8 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
 export default async function CoursePage(props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
   const course = getCourse(params.slug);
-  if (!course) notFound();
+  // Old WordPress course URLs (and retired courses) go to the course list.
+  if (!course) permanentRedirect('/courses');
   const closed = isBookingClosed(course);
 
   const jsonLd = {

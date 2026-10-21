@@ -24,9 +24,9 @@
   --hairline:rgba(255,255,255,0.10);
   --hairline-strong:rgba(244,197,66,0.35);
   --radius:16px;
-  --serif: 'Playfair Display', serif;
-  --display: 'Cinzel', serif;
-  --sans: 'Inter', sans-serif;
+  --serif: var(--ff-playfair), serif;
+  --display: var(--ff-cinzel), serif;
+  --sans: var(--ff-inter), sans-serif;
 }
 .gkb,.gkb *{box-sizing:border-box;}
 

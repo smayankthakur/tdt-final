@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { KUNDLI_PRICE_INR } from '@/lib/pricing/kundli';
 import { createOrder } from '@/lib/razorpay/server';
 import { sanitizePerson } from '@/lib/astrology/deliver';
 import { saveKundliOrder } from '@/lib/astrology/orders';
@@ -6,7 +7,7 @@ import { saveKundliOrder } from '@/lib/astrology/orders';
 export const runtime = 'nodejs';
 
 // Downloadable Kundli Milan report — one-time purchase, no login required.
-const KUNDLI_AMOUNT = 9900; // ₹99.00 in paise
+const KUNDLI_AMOUNT = KUNDLI_PRICE_INR * 100; // in paise
 
 export async function POST(request: NextRequest) {
   try {

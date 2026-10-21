@@ -142,8 +142,8 @@ function buildCsp(nonce: string, isDev: boolean, isHttps: boolean): string {
     isDev
       ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${scriptHosts}`
       : `script-src 'self' 'nonce-${nonce}' 'unsafe-inline' ${scriptHosts}`,
-    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
-    `font-src 'self' data: https://fonts.gstatic.com`,
+    `style-src 'self' 'unsafe-inline'`,
+    `font-src 'self' data:`,
     `img-src 'self' data: blob: https:`,
     `media-src 'self' blob:`,
     `connect-src 'self' https://*.razorpay.com https://lumberjack.razorpay.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.clarity.ms https://*.ingest.us.sentry.io https://*.ingest.sentry.io https://vercel.live`,
@@ -213,6 +213,10 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-nonce', nonce);
   requestHeaders.set('Content-Security-Policy', csp);
   const res = NextResponse.next({ request: { headers: requestHeaders } });
+  // The *.vercel.app address is a copy of the real site: keep it out of
+  // search results (pages also carry a canonical to the real domain).
+  const reqHost = (request.headers.get('host') || '').toLowerCase();
+  if (reqHost.endsWith('.vercel.app')) res.headers.set('X-Robots-Tag', 'noindex');
   return applySecurityHeaders(res, csp);
 }
 

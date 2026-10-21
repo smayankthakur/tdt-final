@@ -23,7 +23,7 @@
 .bk{
   background: var(--ink);
   color: var(--ivory);
-  font-family: "Inter", sans-serif;
+  font-family: var(--ff-inter), sans-serif;
   line-height: 1.65;
   overflow-x: hidden;
 }
@@ -61,7 +61,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: "Cormorant Garamond", serif;
+  font-family: var(--ff-cormorant), serif;
   font-weight: 600;
   font-size: 18px;
   letter-spacing: 0.01em;
@@ -80,7 +80,7 @@
 }
 .bk .brand small{
   display: block;
-  font-family: "Inter", sans-serif;
+  font-family: var(--ff-inter), sans-serif;
   font-weight: 500;
   font-size: 10px;
   letter-spacing: 0.14em;
@@ -182,7 +182,7 @@
   gap: 8px;
   background: var(--violet);
   color: #fff;
-  font-family: "Inter", sans-serif;
+  font-family: var(--ff-inter), sans-serif;
   font-weight: 600;
   font-size: 15px;
   padding: 15px 32px;
@@ -267,7 +267,7 @@
   animation-delay: 0.15s;
 }
 .bk .eyebrow{
-  font-family: "Cinzel", serif;
+  font-family: var(--ff-cinzel), serif;
   letter-spacing: 0.3em;
   font-size: 11px;
   color: var(--gold-soft);
@@ -275,14 +275,14 @@
   margin-bottom: 16px;
 }
 .bk .hero-copy .namaste{
-  font-family: "Cormorant Garamond", serif;
+  font-family: var(--ff-cormorant), serif;
   font-style: italic;
   font-size: clamp(1.1rem, 2vw, 1.35rem);
   color: var(--ivory-dim);
   margin-bottom: 14px;
 }
 .bk .hero-copy h1{
-  font-family: "Cormorant Garamond", serif;
+  font-family: var(--ff-cormorant), serif;
   font-weight: 600;
   font-size: clamp(2rem, 3.6vw, 3.1rem);
   margin-bottom: 18px;
@@ -308,7 +308,7 @@
   gap: 4px;
 }
 .bk .hero-stats strong{
-  font-family: "Cormorant Garamond", serif;
+  font-family: var(--ff-cormorant), serif;
   font-size: 26px;
   color: var(--gold-soft);
 }
@@ -350,7 +350,7 @@
   padding: 90px 0;
 }
 .bk .kicker{
-  font-family: "Cinzel", serif;
+  font-family: var(--ff-cinzel), serif;
   font-size: 11px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
@@ -359,7 +359,7 @@
   text-align: center;
 }
 .bk h2{
-  font-family: "Cormorant Garamond", serif;
+  font-family: var(--ff-cormorant), serif;
   font-size: clamp(1.7rem, 3.4vw, 2.3rem);
   font-weight: 600;
   text-align: center;
@@ -402,13 +402,13 @@
   margin-bottom: 20px;
 }
 .bk .price-card h3{
-  font-family: "Cormorant Garamond", serif;
+  font-family: var(--ff-cormorant), serif;
   font-size: 28px;
   font-weight: 600;
   margin-bottom: 6px;
 }
 .bk .price-card .amount{
-  font-family: "Cormorant Garamond", serif;
+  font-family: var(--ff-cormorant), serif;
   font-size: 46px;
   font-weight: 600;
   color: var(--ivory);
@@ -416,7 +416,7 @@
 }
 .bk .price-card .amount small{
   display: block;
-  font-family: "Inter", sans-serif;
+  font-family: var(--ff-inter), sans-serif;
   font-size: 12.5px;
   font-weight: 500;
   color: var(--ivory-dim);
@@ -469,7 +469,7 @@
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 }
 .bk .notes-card-heading{
-  font-family: "Cinzel", serif;
+  font-family: var(--ff-cinzel), serif;
   font-size: 11px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
@@ -497,7 +497,7 @@
 }
 .bk details.tc summary{
   cursor: pointer;
-  font-family: "Cinzel", serif;
+  font-family: var(--ff-cinzel), serif;
   font-size: 12.5px;
   letter-spacing: 0.06em;
   color: var(--gold-soft);
@@ -536,7 +536,7 @@
   color: var(--ivory-dim);
 }
 .bk .footer-heading{
-  font-family: "Cinzel", serif;
+  font-family: var(--ff-cinzel), serif;
   font-size: 11px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -634,11 +634,11 @@
 .bk .price-card,.bk .notes-card{ padding: 28px 22px; }}
 .bk .form-page{ min-height: 100vh; padding: 32px 0 80px; background: radial-gradient(900px 400px at 50% -10%, rgba(109,40,217,.25), transparent), var(--ink); }
 .bk .form-wrap{ max-width: 680px; }
-.bk .form-brand{ display: flex; align-items: center; gap: 10px; justify-content: center; text-decoration: none; margin-bottom: 24px; font-family: "Cormorant Garamond", serif; font-size: 20px; font-weight: 600; }
+.bk .form-brand{ display: flex; align-items: center; gap: 10px; justify-content: center; text-decoration: none; margin-bottom: 24px; font-family: var(--ff-cormorant), serif; font-size: 20px; font-weight: 600; }
 .bk .form-brand img{ width: 38px; height: 38px; border-radius: 50%; }
 .bk .rf-card{ background: var(--panel); border: 1px solid var(--panel-line); border-radius: 20px; padding: 36px 32px; }
-.bk .rf-card h1{ font-family: "Cinzel", serif; font-size: 26px; margin-bottom: 14px; color: var(--gold-soft); }
-.bk .rf-sec{ font-family: "Cormorant Garamond", serif; font-size: 24px; margin: 34px 0 6px; padding-top: 22px; border-top: 1px solid var(--panel-line); }
+.bk .rf-card h1{ font-family: var(--ff-cinzel), serif; font-size: 26px; margin-bottom: 14px; color: var(--gold-soft); }
+.bk .rf-sec{ font-family: var(--ff-cormorant), serif; font-size: 24px; margin: 34px 0 6px; padding-top: 22px; border-top: 1px solid var(--panel-line); }
 .bk .rf-sec small,.bk .rf-label small{ color: var(--ivory-dim); font-weight: 400; font-size: 13px; }
 .bk .rf-sec b,.bk .rf-label b{ color: #ff7a7a; }
 .bk .rf-slot{ display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--gold); border-radius: 12px; padding: 12px 16px; margin: 6px 0 16px; }
@@ -770,12 +770,12 @@
 .bk .clock-digital{ font-size: 34px; }}
 @media (prefers-reduced-motion: reduce){.bk .step.active,.bk .pop,.bk .fd-icon,.bk .person-body{ animation: none; }}
 .bk .hero-price{ display: inline-flex; align-items: center; gap: 14px; margin: 4px 0 18px; padding: 10px 20px 10px 16px; border: 1px solid var(--gold); border-radius: 14px; background: linear-gradient(135deg, rgba(201,162,39,.16), rgba(139,92,246,.14)); animation: priceGlow 3s ease-in-out infinite; }
-.bk .hero-price strong{ font-family: "Cinzel", serif; font-size: 32px; color: var(--gold-soft); line-height: 1; }
+.bk .hero-price strong{ font-family: var(--ff-cinzel), serif; font-size: 32px; color: var(--gold-soft); line-height: 1; }
 .bk .hero-price span{ font-size: 13px; line-height: 1.35; color: var(--ivory-dim); text-align: left; }
 @keyframes priceGlow{ 50% { box-shadow: 0 0 22px rgba(201,162,39,.35); } }
 .bk .sticky-book{ position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px max(18px, calc((100vw - 1100px) / 2)); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); background: rgba(20,14,36,.92); backdrop-filter: blur(12px); border-top: 1px solid var(--gold); transform: translateY(110%); transition: transform .35s cubic-bezier(.22,1,.36,1); }
 .bk .sticky-book.show{ transform: none; }
-.bk .sticky-book strong{ font-family: "Cinzel", serif; font-size: 22px; color: var(--gold-soft); margin-right: 10px; }
+.bk .sticky-book strong{ font-family: var(--ff-cinzel), serif; font-size: 22px; color: var(--gold-soft); margin-right: 10px; }
 .bk .sticky-book span{ font-size: 13px; color: var(--ivory-dim); }
 @media (max-width: 560px){.bk .sticky-book span{ display: none; }
 .bk .hero-price{ display: flex; justify-content: center; }}
@@ -835,7 +835,7 @@
 .bk .resume-banner .btn{ padding: 8px 18px; font-size: 14px; }
 @media (max-width: 860px){.bk .hero-actions{ justify-content: center; }}
 .bk .diwali-flash{ position: absolute; z-index: 3; top: 16px; left: 50%; transform: translateX(-50%); width: min(88%, 380px); display: grid; gap: 2px; text-align: center; text-decoration: none; padding: 12px 16px; border-radius: 14px; color: #2a1300; background: linear-gradient(135deg, #ffd86b, #ff9f1c 55%, #ffcf4d); border: 2px solid #fff3c4; box-shadow: 0 0 0 0 rgba(255,190,60,.7), 0 12px 30px rgba(0,0,0,.45); animation: diwaliBlink 1.1s ease-in-out infinite; }
-.bk .diwali-flash b{ font-family: "Cinzel", serif; font-size: 17px; letter-spacing: .06em; text-transform: uppercase; }
+.bk .diwali-flash b{ font-family: var(--ff-cinzel), serif; font-size: 17px; letter-spacing: .06em; text-transform: uppercase; }
 .bk .diwali-flash span{ font-size: 14px; font-weight: 600; line-height: 1.3; }
 .bk .diwali-flash strong{ font-size: 19px; color: #7a0b0b; }
 .bk .diwali-flash small{ font-size: 12px; font-weight: 600; opacity: .85; }

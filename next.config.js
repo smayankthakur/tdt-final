@@ -9,6 +9,11 @@ const nextConfig = {
   },
   // nodemailer is server-only; keep it out of the bundler.
   serverExternalPackages: ['nodemailer'],
+  // Put <title>, description, canonical and Open Graph tags in <head> for
+  // every visitor. By default Next streams them into <body> for anything it
+  // doesn't recognise as a crawler, and many AI crawlers (and Lighthouse) only
+  // read <head>.
+  htmlLimitedBots: /.*/,
   async redirects() {
     return [
       // Paths that existed on the separate sites, now living under one roof.
@@ -20,6 +25,11 @@ const nextConfig = {
       { source: '/chat', destination: '/reading', permanent: true },
       { source: '/terms-and-conditions', destination: '/terms', permanent: true },
       { source: '/refund', destination: '/refund-policy', permanent: true },
+      // URLs from the old WordPress site that search engines still list.
+      { source: '/free-tarot-readings', destination: '/reading', permanent: true },
+      { source: '/1-card-tarot', destination: '/reading', permanent: true },
+      { source: '/lp-courses', destination: '/courses', permanent: true },
+      { source: '/courses/candle-wax-readings-course', destination: '/courses/candle-wax-reading', permanent: true },
     ];
   },
 };

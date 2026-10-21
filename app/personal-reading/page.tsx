@@ -18,7 +18,14 @@ export default async function PersonalReadingPage(props: { searchParams: Promise
     areaServed: 'Worldwide',
     url: `${SITE}/personal-reading`,
     offers: [
-      { '@type': 'Offer', name: 'Call Reading', price: offer ? OFFER.price : REGULAR_PRICE, priceCurrency: 'INR' },
+      {
+        '@type': 'Offer',
+        name: 'Call Reading',
+        price: offer ? OFFER.price : REGULAR_PRICE,
+        priceCurrency: 'INR',
+        // The festival price ends on its own; tell search engines when.
+        ...(offer ? { priceValidUntil: new Date(OFFER.until).toISOString().slice(0, 10) } : {}),
+      },
       { '@type': 'Offer', name: 'Urgent Call Reading (within 48 hours)', price: URGENT_PRICE, priceCurrency: 'INR' },
     ],
   };

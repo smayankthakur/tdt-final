@@ -15,7 +15,7 @@ const WatermarkCell = memo(function WatermarkCell({ text, fontSize, opacity, red
   const computedStyle = useMemo(() => ({
     fontSize: `${fontSize}px`,
     color: `rgba(255, 215, 0, ${opacity})`,
-    fontFamily: 'Cinzel, Georgia, serif',
+    fontFamily: 'Georgia, serif', // no web font: keeps brand font files off the main pages
     letterSpacing: '0.25em',
     textTransform: 'uppercase' as const,
     whiteSpace: 'nowrap' as const,

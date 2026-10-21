@@ -39,6 +39,7 @@ const STRUCTURED_DATA = {
         '@type': 'ContactPoint',
         url: `${BASE_URL}/contact`,
         contactType: 'customer support',
+        email: 'thedivinetarot111@gmail.com',
         availableLanguage: ['English', 'Hindi'],
       },
       sameAs: [

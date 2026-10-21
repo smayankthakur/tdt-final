@@ -63,8 +63,8 @@ export default function CoursesPage() {
           <p className="mt-2 text-[#A1A1AA]">Five self-paced video courses with one year of access and a certificate on completion.</p>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {RECORDED_COURSES.map((c) => (
-            <CourseCard key={c.slug} course={c} />
+          {RECORDED_COURSES.map((c, i) => (
+            <CourseCard key={c.slug} course={c} priority={i === 0} />
           ))}
         </div>
 

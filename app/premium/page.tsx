@@ -104,8 +104,21 @@ export default function PremiumPage() {
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
-              '@type': 'FAQPage',
-              mainEntity: FAQ.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+              '@graph': [
+                {
+                  '@type': 'Service',
+                  name: `Ginni Ki Baatein ${PASS_DAYS}-day reading pass`,
+                  serviceType: 'Online tarot reading',
+                  description: `Unlimited tarot readings for ${PASS_DAYS} days in Hinglish, Hindi or English. One-time payment, no auto-renewal.`,
+                  provider: { '@type': 'Organization', name: 'The Divine Tarot', url: 'https://thedivinetarotonline.com' },
+                  url: 'https://thedivinetarotonline.com/premium',
+                  offers: { '@type': 'Offer', price: PASS_PRICE_INR, priceCurrency: 'INR', url: 'https://thedivinetarotonline.com/premium' },
+                },
+                {
+                  '@type': 'FAQPage',
+                  mainEntity: FAQ.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+                },
+              ],
             }),
           }}
         />
