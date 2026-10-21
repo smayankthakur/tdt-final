@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -14,6 +14,7 @@ import { moonSiderealPosition, toUtcInstant, zoneOffsetMinutes } from '@/lib/ast
 import { loadRazorpayScript, openRazorpayCheckout } from '@/lib/razorpay/client';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { DatePicker, TimePicker, Select } from '@/components/ui/pickers';
 import { useLanguage } from '@/hooks/useLanguage';
 
 // IANA zones: the offset is worked out for the actual birth date, so
@@ -299,8 +300,14 @@ function PersonCard({
 }) {
   const { t } = useLanguage();
   const set = (patch: Partial<FormState>) => onChange({ ...state, ...patch });
+  const uid = useId();
+  const thisYear = new Date().getFullYear();
+  const now = new Date();
+  const todayIso = `${thisYear}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   return (
-    <div className="min-w-0 overflow-hidden rounded-2xl border border-gold/10 bg-card/40 backdrop-blur-sm p-5 md:p-6">
+    // focus-within lifts the card above its neighbour while a picker is open,
+    // so the popover is never hidden behind the next card.
+    <div className="relative min-w-0 rounded-2xl focus-within:z-20 border border-gold/10 bg-card/40 backdrop-blur-sm p-5 md:p-6">
       <div className="flex items-baseline gap-2 mb-5 pb-4 border-b border-white/5">
         <span className="h-2 w-2 rounded-full" style={{ background: accent }} />
         <h3 className="font-heading text-lg">{title}</h3>
@@ -308,8 +315,9 @@ function PersonCard({
       </div>
 
       <div className="space-y-4">
-        <Field label={t('kundli.name')} icon={<User className="h-5 w-5" />} helper={t('kundli.nameHelper')}>
+        <Field id={`${uid}-name`} label={t('kundli.name')} icon={<User className="h-5 w-5" />} helper={t('kundli.nameHelper')}>
           <input
+            id={`${uid}-name`}
             type="text" value={state.name}
             onChange={(e) => set({ name: e.target.value })}
             placeholder={t('kundli.namePlaceholder')}
@@ -318,32 +326,37 @@ function PersonCard({
         </Field>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
-          <Field label={t('kundli.dob')} icon={<Calendar className="h-5 w-5" />}>
-            <input
-              type="date" value={state.date}
-              onChange={(e) => set({ date: e.target.value })}
+          <Field id={`${uid}-dob`} label={t('kundli.dob')} icon={<Calendar className="h-5 w-5" />}>
+            <DatePicker
+              id={`${uid}-dob`}
+              value={state.date}
+              onChange={(date) => set({ date })}
+              placeholder="Select date"
+              max={todayIso}
+              yearRange={[1925, thisYear]}
+              defaultView={{ year: 1995 }}
               className={FIELD}
             />
           </Field>
-          <Field label={t('kundli.time')} icon={<Clock className="h-5 w-5" />} helper={t('kundli.timeHelper')}>
-            <input
-              type="time" value={state.time}
-              onChange={(e) => set({ time: e.target.value })}
+          <Field id={`${uid}-time`} label={t('kundli.time')} icon={<Clock className="h-5 w-5" />} helper={t('kundli.timeHelper')}>
+            <TimePicker
+              id={`${uid}-time`}
+              value={state.time}
+              onChange={(time) => set({ time })}
               className={FIELD}
             />
           </Field>
         </div>
 
-        <Field label={t('kundli.tz')} icon={<Globe2 className="h-5 w-5" />}>
-          <select
+        <Field id={`${uid}-tz`} label={t('kundli.tz')} icon={<Globe2 className="h-5 w-5" />}>
+          <Select
+            id={`${uid}-tz`}
             value={state.tz}
-            onChange={(e) => set({ tz: e.target.value })}
-            className={cn(FIELD, 'cursor-pointer')}
-          >
-            {TIMEZONES.map((tz) => (
-              <option key={tz.label} value={tz.value} className="bg-background text-foreground">{tz.label}</option>
-            ))}
-          </select>
+            onChange={(tz) => set({ tz })}
+            listLabel={t('kundli.tz')}
+            options={TIMEZONES.map((tz) => ({ value: tz.value, label: tz.label }))}
+            className={FIELD}
+          />
         </Field>
       </div>
     </div>
@@ -351,15 +364,15 @@ function PersonCard({
 }
 
 function Field({
-  label, icon, helper, children,
+  id, label, icon, helper, children,
 }: {
-  label: string; icon?: React.ReactNode; helper?: string; children: React.ReactNode;
+  id: string; label: string; icon?: React.ReactNode; helper?: string; children: React.ReactNode;
 }) {
   return (
-    <label className="block w-full min-w-0">
-      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gold/90">
+    <div className="w-full min-w-0">
+      <label htmlFor={id} className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gold/90">
         {label}
-      </span>
+      </label>
       <div className="relative min-w-0">
         {icon && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted pointer-events-none z-10">
@@ -368,8 +381,8 @@ function Field({
         )}
         {children}
       </div>
-      {helper && <span className="mt-1 block text-xs text-foreground-muted italic">{helper}</span>}
-    </label>
+      {helper && <p className="mt-1 text-xs text-foreground-muted italic">{helper}</p>}
+    </div>
   );
 }
 

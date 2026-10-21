@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
-import { Mail, RefreshCcw, Send, AlertCircle, UploadCloud, ChevronDown, X } from 'lucide-react';
+import { Mail, RefreshCcw, Send, AlertCircle, UploadCloud, X } from 'lucide-react';
+import { Select } from '@/components/ui/pickers';
 
 type Screenshot = { file: File; previewUrl: string } | null;
 
@@ -225,15 +226,11 @@ export default function SupportForm() {
 
           <div className="space-y-2">
             <label htmlFor="issueType" className="block text-sm font-medium text-slate-300">{t('support.issue')} *</label>
-            <div className="relative">
-              <select id="issueType" name="issueType" value={formData.issueType} onChange={handleInputChange}
-                className={`${inputCls} appearance-none`}>
-                {ISSUE_VALUES.map((v) => (
-                  <option key={v} value={v}>{t(`support.issue.${v}`)}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
-            </div>
+            <Select id="issueType" name="issueType" value={formData.issueType}
+              onChange={(v) => setFormData((prev) => ({ ...prev, issueType: v }))}
+              listLabel={t('support.issue')}
+              options={ISSUE_VALUES.map((v) => ({ value: v, label: t(`support.issue.${v}`) }))}
+              className={inputCls} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

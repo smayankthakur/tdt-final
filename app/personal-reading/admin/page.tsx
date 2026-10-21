@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { slotMs, type Cfg } from "@/lib/booking/slots";
+import { DatePicker, TimePicker } from "@/components/ui/pickers";
+
+const PICK = "w-full rounded-md border border-[#888] bg-transparent px-2.5 py-1.5 text-[15px] text-inherit focus:outline-none focus:border-[#D4AF37]";
 const td = { padding: "3px 14px 3px 0", opacity: 0.7, verticalAlign: "top", whiteSpace: "nowrap" } as const;
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -49,13 +52,13 @@ export default function Admin() {
         <button onClick={() => load()} style={{ marginLeft: "auto", padding: "6px 12px", background: "transparent", border: "1px solid #555", borderRadius: 8, color: "inherit", cursor: "pointer" }}>↻ Refresh</button>
       </div>
       {tab === "slots" && (<div>
-      <p style={{ margin: "0 0 14px" }}>Booking dates: <input type="date" value={cfg.fromDate || ""} onChange={(e) => setCfg({ ...cfg, fromDate: e.target.value })} style={box} /> se <input type="date" value={cfg.toDate || ""} onChange={(e) => setCfg({ ...cfg, toDate: e.target.value })} style={box} /> tak (normal + urgent dono)</p>
+      <p style={{ margin: "0 0 14px" }}>Booking dates: <span className="inline-block w-44 align-middle"><DatePicker ariaLabel="Booking from" value={cfg.fromDate || ""} onChange={(v) => setCfg({ ...cfg, fromDate: v })} className={PICK} /></span> se <span className="inline-block w-44 align-middle"><DatePicker ariaLabel="Booking until" value={cfg.toDate || ""} onChange={(v) => setCfg({ ...cfg, toDate: v })} className={PICK} /></span> tak (normal + urgent dono)</p>
       <h3>Normal booking — days &amp; time (India time)</h3>
       {DAYS.map((n, i) => (
         <div key={i} style={{ display: "flex", gap: 10, alignItems: "center", margin: "8px 0" }}>
           <label style={{ width: 130 }}><input type="checkbox" checked={day(i).on} onChange={(e) => setDay(i, { on: e.target.checked })} /> {n}</label>
-          <input type="time" value={day(i).start} onChange={(e) => setDay(i, { start: e.target.value })} style={box} /> to
-          <input type="time" value={day(i).end} onChange={(e) => setDay(i, { end: e.target.value })} style={box} />
+          <span className="inline-block w-36"><TimePicker ariaLabel="start" minuteStep={5} value={day(i).start} onChange={(v) => setDay(i, { start: v })} className={PICK} /></span> to
+          <span className="inline-block w-36"><TimePicker ariaLabel="end" minuteStep={5} value={day(i).end} onChange={(v) => setDay(i, { end: v })} className={PICK} /></span>
         </div>))}
       <p>Call length (min): <input type="number" value={cfg.duration} onChange={(e) => setCfg({ ...cfg, duration: +e.target.value })} style={{ ...box, width: 70 }} />
         &nbsp; Slot gap (min): <input type="number" value={cfg.step} onChange={(e) => setCfg({ ...cfg, step: +e.target.value })} style={{ ...box, width: 70 }} />
@@ -66,8 +69,8 @@ export default function Admin() {
       {DAYS.map((n, i) => (
         <div key={"u" + i} style={{ display: "flex", gap: 10, alignItems: "center", margin: "8px 0" }}>
           <label style={{ width: 130 }}><input type="checkbox" checked={uday(i).on} onChange={(e) => setUday(i, { on: e.target.checked })} /> {n}</label>
-          <input type="time" value={uday(i).start} onChange={(e) => setUday(i, { start: e.target.value })} style={box} /> to
-          <input type="time" value={uday(i).end} onChange={(e) => setUday(i, { end: e.target.value })} style={box} />
+          <span className="inline-block w-36"><TimePicker ariaLabel="start" minuteStep={5} value={uday(i).start} onChange={(v) => setUday(i, { start: v })} className={PICK} /></span> to
+          <span className="inline-block w-36"><TimePicker ariaLabel="end" minuteStep={5} value={uday(i).end} onChange={(v) => setUday(i, { end: v })} className={PICK} /></span>
         </div>))}
       <p>Payment ke <input type="number" value={cfg.urgentHours} onChange={(e) => setCfg({ ...cfg, urgentHours: +e.target.value })} style={{ ...box, width: 60 }} /> ghante ke andar.
         &nbsp; Kam se kam kitne ghante baad (taiyari ka time): <input type="number" value={cfg.urgentLeadHours} onChange={(e) => setCfg({ ...cfg, urgentLeadHours: +e.target.value })} style={{ ...box, width: 60 }} /></p>
