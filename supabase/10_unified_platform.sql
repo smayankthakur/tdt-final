@@ -521,3 +521,8 @@ begin
 end $$;
 revoke all on function public.migrate_set_password_hash(uuid, text) from public, anon, authenticated;
 grant execute on function public.migrate_set_password_hash(uuid, text) to service_role;
+
+-- Trigger functions run as triggers only; nobody needs to call them over the API.
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.handle_user_email_change() from public, anon, authenticated;
+revoke execute on function public.prune_chat_messages() from public, anon, authenticated;

@@ -1,40 +1,41 @@
 # Pre-launch audit: unified thedivinetarotonline.com
 
-Audited 21 Oct 2026. I tested the production build (Next.js 15.5.28) against a local Supabase-compatible stack: Postgres 16, Supabase Auth v2.170 and PostgREST 12. I also inspected:
+Re-audited 21 Oct 2026, 16:10 IST, against the **live deployment** `tdt-final.vercel.app` (env loaded, connected to Supabase **ginni2** `hnaggjopklxcgzxsyswc`). Evidence comes from:
 
-- the live preview at `tdt-final.vercel.app` (no env vars set yet);
-- the site's Supabase project **ginni2** (`hnaggjopklxcgzxsyswc`, the reading app's database: Security Advisor and row counts, read-only), and the old chat app's project `Tdt-Ginni`;
-- the public GitHub repo `smayankthakur/tdt-final`;
-- DNS for the domain.
+- `curl` against the live site (headers, routes, CSRF, webhooks, cookies, crons);
+- a scan of 24 client JS bundles for secrets;
+- a direct read-only database inspection (RLS, grants, counts) plus anon-key REST probes;
+- the Supabase dashboard (Security Advisor, Auth rate limits, backups);
+- the public GitHub page and DNS;
+- the earlier local test suite (e2e 82/82, axe on 14 pages).
 
 This is a technical and compliance checklist, not legal advice.
 
-**Launch verdict: NO-GO.** The code is ready. What blocks launch is outside the code: a public repo that exposes a token and customer data, a live database and Vercel project that are not set up yet, and old subscribers who still need to be handled.
+**Launch verdict: NO-GO.** The site itself is working on the live database (logins, passes and bookings verified). Four blockers are still open; none of them is a code change.
 
 ## Blockers (must be fixed before the domain is switched)
 
-| # | Blocker | What to do |
-| --- | --- | --- |
-| B1 | **The GitHub repo `smayankthakur/tdt-final` is public.** Its `_import/*.tgz` archives contain the WhatsApp Business token (`main.tgz` and `fresh/main.tgz` → `Test number.txt`), a SQL file with about 50 subscriber emails (`fresh/support.tgz` → `activate_razorpay_subscribers.sql`) and the paid reading content. | 1. Make the repo private now. 2. Delete `_import/` and purge it from history; deleting and recreating the repo from this clean copy is simplest. 3. Revoke the WhatsApp token in Meta and create a new one. 4. With a lawyer, decide whether the exposure of subscriber emails needs a DPDP breach notice. |
-| B2 | **189 people still hold an active premium pass on the old chat app** (latest expiry 20 Nov 2026), and Razorpay has 819 subscription IDs. 182 of them are anonymous accounts that cannot log in to the new site. | Keep `chat.thedivinetarotonline.com` on the old app and its own Supabase project (Tdt-Ginni) until 20 Nov 2026. Cancel the recurring Razorpay subscriptions so nobody is charged again. |
-| B3 | ~~The site's database is not prepared.~~ **Done 21 Oct 2026:** SQL 01–04, 10 and 11 applied to ginni2; 748 reading accounts, 9,161 chat messages, 711 orders, 140 booking orders and 35 bookings moved; demo login verified on tdt-final.vercel.app. | Re-run `npm run migrate:legacy -- --commit` right before switching the domain, to pick up accounts, passes and bookings made on the old sites in the meantime. |
-| B4 | **The Vercel project `tdt-final` has no environment variables.** Right now `/api/booking/slots` returns 503. `.env.vercel` is complete (Supabase now points at ginni2; keys verified against its API). | Load all 44 variables into Vercel, then redeploy. |
-| B5 | **The Razorpay webhooks are not registered.** | Create the 3 webhooks listed in the README, each with its own secret. |
-| B6 | **Business details are missing (L16).** | Add the legal entity name, address, a grievance officer's name and email, and the GSTIN if registered to `/terms` and `/contact`. |
-| B7 | **Supabase Auth rate limits are too low.** Sign-ins happen server-side, so every visitor shares a handful of Vercel IPs, and the default per-IP limit would start refusing logins on a busy day. | In Supabase → Authentication → Rate limits, raise the sign-in, sign-up and token-refresh limits. The site already applies its own per-email and per-IP limits. |
+| # | Status | Blocker | What to do |
+| --- | --- | --- | --- |
+| B1 | **OPEN** | **The GitHub repo `smayankthakur/tdt-final` is still public and still has `_import/`** (checked 21 Oct 16:15 IST). It contains the WhatsApp Business token, a SQL file with about 50 subscriber emails and the paid reading content. | 1. Make the repo private now; Vercel keeps deploying from a private repo. 2. Delete `_import/` and purge history (or recreate the repo from `D:\tdt-final` without it). 3. Revoke the WhatsApp token in Meta and issue a new one. 4. With a lawyer, decide whether the exposed emails need a DPDP breach notice. |
+| B2 | **OPEN** | **Old subscriptions still running.** The old chat app has 189 active passes (to 20 Nov 2026) and 819 Razorpay subscription IDs. 24 reading accounts are on monthly Razorpay subscriptions that the new site cannot renew. | Cancel those recurring subscriptions in Razorpay. Keep `chat.thedivinetarotonline.com` on the old app until 20 Nov 2026. |
+| B3 | DONE | Database set up and data moved. | Live counts: 748 accounts with profiles, 302 active passes, 330 paid orders, 141 booking orders. Re-run `npm run migrate:legacy -- --commit` just before the domain switch. |
+| B4 | DONE | Vercel env loaded. | `/api/booking/slots` returns 200 and the demo login works on the live site. |
+| B5 | **NEEDS-HUMAN** | **Razorpay webhooks registered?** All 3 endpoints are live and reject unsigned calls (401). Whether Razorpay has them registered can only be confirmed in the Razorpay dashboard. | Add the 3 webhook URLs (README) on the **live-mode** dashboard with the secrets from `.env.vercel`, then send a test event. |
+| B6 | **OPEN** | **Business details missing (L16).** `/terms` and `/contact` show no legal entity, address or grievance officer. | Tell me the legal name, address, grievance officer's name and email, and GSTIN (if any), and I'll add them. |
+| B7 | **OPEN** | **Supabase Auth rate limits are still at the defaults:** 30 sign-ins and sign-ups and 150 token refreshes per 5 min per IP. The site signs users in from Vercel's servers, so visitors share a few IPs; a busy hour would start refusing logins. | Supabase → ginni2 → Authentication → Rate Limits: sign-ups/sign-ins to 1000 and token refreshes to 3000 per 5 min. The site keeps its own per-email and per-IP limits. |
 
 ## High (first week)
 
-- **24 reading accounts are marked as active monthly Razorpay subscribers** (`subscriptionStatus = active`). Their current expiry carries over, but the new site sells one-time 30-day passes and has no handler for subscription renewals. Cancel those subscriptions in Razorpay (or keep extending their pass by hand) before the next renewal date.
-- ginni2 is on the **Free plan**: no downloadable backups and no leaked-password protection. Move it to Pro (daily backups, PITR add-on) before launch traffic, then test a restore.
-- Security Advisor on ginni2: 0 errors, 11 warnings. `11_harden_after_cutover.sql` revokes API access to `rls_auto_enable()`. The other warnings are the mobile app's `tdt_*` functions, which the app calls on purpose; review them with the app's code.
-- Add a DMARC record for `thedivinetarotonline.com`, for example `_dmarc TXT "v=DMARC1; p=none; rua=mailto:<you>"`. SPF and DKIM are already present.
-- The current booking site on Vercel uses `rzp_test_` keys. Confirm that the new project uses the live keys, then make one real ₹1 payment end to end.
-- Substantiate or soften "India's No.1 Psychic Tarot Reader" and "Trusted by 7L+ Seekers" (L12).
-- Confirm whether the displayed prices include GST, and say so next to each price (L10).
+- **ginni2 is on the Free plan: no backups** (dashboard: "Free Plan does not include project backups"). It now holds 748 paying accounts and payment history. Upgrade to Pro (7 days of daily backups) and test a restore.
+- Add a DMARC record (still missing): `_dmarc.thedivinetarotonline.com TXT "v=DMARC1; p=none; rua=mailto:<you>"`.
+- Make one real ₹1 live payment for each flow: reading pass, personal reading, Kundli report.
+- Back up or soften "India's No.1 Psychic Tarot Reader" and "Trusted by 7L+ Seekers" (L12).
 - Add an uptime monitor.
 - Have a lawyer review the Privacy, Terms and Refund pages.
-- Rotate the old `BOOKING_ADMIN_TOKEN` (`thedivinetarot111`) everywhere it is still used. The new project uses a fresh random token.
+- Rotate the old `BOOKING_ADMIN_TOKEN` (`thedivinetarot111`) wherever it is still used.
+- Push the latest code to GitHub so the HSTS fix (S1) is deployed.
+- Review the mobile app's `tdt_log_events()` (callable without login) and the other `tdt_*` functions with the app code.
 
 ## Advisory
 
@@ -58,7 +59,7 @@ This is a technical and compliance checklist, not legal advice.
 | L7 Data minimisation | PASS | birth details are asked only for Kundli and personal readings, where the service needs them | — |
 | L8 Third-party SDKs | PASS | Razorpay, GA/GTM, Clarity, Sentry and Resend are each named in the privacy policy | — |
 | L9 Dark patterns | PASS | no pre-ticked boxes; the Diwali offer has a real end date (`src/lib/booking/offer.ts`); the pass is a one-time 30-day purchase, not auto-renewing | — |
-| L10 Hidden fees | NEEDS-HUMAN | the full price is shown before checkout and set on the server; GST inclusion is not stated | state "incl. GST" or add GST |
+| L10 Hidden fees | PASS | the price shown is the amount charged (set on the server, nothing added at checkout); `/terms` says prices include applicable taxes | confirm GST treatment with your CA |
 | L11 Fake reviews | PASS | untraceable testimonials were removed; `src/data/testimonials.ts` is empty on purpose | add only consented ones |
 | L12 Claims | NEEDS-HUMAN | "India's No.1", "7L+ seekers"; the astrology disclaimer is on the reading and Kundli pages | substantiate or soften |
 | L13 Alt text | PASS | axe `image-alt`: 0 violations on 14 pages | — |
@@ -74,7 +75,7 @@ This is a technical and compliance checklist, not legal advice.
 
 | ID | Status | Evidence | Fix |
 | --- | --- | --- | --- |
-| S1 Headers | PASS | `curl -sI https://tdt-final.vercel.app`: HSTS `max-age=63072000; includeSubDomains; preload`, CSP with nonce, nosniff, `X-Frame-Options`, Referrer-Policy, Permissions-Policy | — |
+| S1 Headers | PASS (fix pending deploy) | live: HSTS `max-age=31536000; includeSubDomains; preload`, CSP with nonce, nosniff, `X-Frame-Options: SAMEORIGIN`, Referrer-Policy, Permissions-Policy | raised to `max-age=63072000` in `middleware.ts`; ships on next push |
 | S2 CSRF | PASS | `middleware.ts` rejects cross-origin POST, PUT, PATCH and DELETE to `/api` with 403 (tested); cookies are SameSite=Lax | — |
 | S3 Sessions on reset | PASS | reset calls `signOut({scope:'others'})`; the e2e test shows the old session is refused | — |
 | S4 Reset links | PASS | single-use Supabase recovery token, short expiry, reuse rejected (e2e) | — |
@@ -85,18 +86,18 @@ This is a technical and compliance checklist, not legal advice.
 | S9 Prompt injection | PASS | the AI fallback is off unless a key is set; its output is rendered as text and never triggers actions | — |
 | S10 AI caps | PASS | every AI call needs a paid credit; `max_tokens: 500`; question capped at 500 characters | set provider spend alert if enabled |
 | S11 Request size | PASS | upload caps, length caps on questions, forms and support text; Vercel 4.5 MB body limit | — |
-| S12 Rate limits | PASS | DB limiter `rate_hit()`: login 10/15 min per email and 30 per IP, signup 10/h per IP, reset 3/h, support 5/h, booking holds 6/h, subscribe 10/h | raise Supabase limits (B7) |
+| S12 Rate limits | PASS (site) / FAIL (Supabase Auth) | site's own limiter `rate_hit()`: login 10/15 min per email and 30 per IP, signup 10/h, reset 3/h, support 5/h, booking holds 6/h, subscribe 10/h. Supabase Auth defaults are too low for server-side sign-in | Blocker B7 |
 | S13 Validation | PASS | server-side checks on every route; supabase-js parameterises queries; no raw HTML rendering of user input | — |
 | S14 CORS | PASS | no `Access-Control-Allow-Origin` on the API; same-origin only | — |
-| S15 Directory listing | PASS | the support bucket is private; `/.env` and `/.env.vercel` return 404 on the preview | — |
-| S16 Admin routes | PASS | `/admin` and `/api/debug/*` return 404; the booking admin needs a Supabase `role=admin` or the token | — |
+| S15 Directory listing | PASS | `support-uploads` bucket: `public=false`, 3 MB, PNG/JPEG/WebP only (DB check); `/.env` and `/.env.vercel` return 404 live | — |
+| S16 Admin routes | PASS | live: `/admin` and `/api/debug/x` return 404; crons return 401 without `CRON_SECRET`; the booking admin data needs a Supabase `role=admin` or the token | — |
 | S17 Lockout | PASS | per-email login throttle (10/15 min) with no permanent lock, so real users can't be locked out | — |
 | S18 Security logs | PASS | Supabase Auth audit log; payment, webhook and admin events go to Sentry/console without secrets | — |
-| S19 Cookies | PASS | `sb-…-auth-token` is HttpOnly, Secure in production, SameSite=Lax (verified in the response header) | — |
-| S20 DB permissions | PASS | site tables: RLS on, own-row reads only, money RPCs callable only by service_role (e2e 401 for anon). ginni2 today: anon key reads 0 rows from the old Prisma tables; Security Advisor 0 errors, 11 warnings (mobile-app `tdt_*` functions, `rls_auto_enable`) | run `11_harden_after_cutover.sql`; review `tdt_*` with the app |
-| S21 Secrets | FAIL | the new code and client bundle are clean, but the public repo's `_import/*.tgz` exposes the WhatsApp token | Blocker B1 |
+| S19 Cookies | PASS | live login: `sb-hnaggjopklxcgzxsyswc-auth-token …; Secure; HttpOnly; SameSite=lax` | `__Host-` prefix not possible with Supabase's cookie name; acceptable |
+| S20 DB permissions | PASS | live DB: RLS on for every `public` table; anon key reads 0 rows from all site and old tables; money RPCs return 404 to anon; anon-callable SECURITY DEFINER functions cut from 4 to 1 today (revoked the 3 trigger functions; triggers re-tested in a rolled-back transaction); Security Advisor 0 errors, 9 warnings | review mobile-app `tdt_log_events` (High) |
+| S21 Secrets | FAIL | 24 live JS bundles: no service-role JWT, Razorpay secret, Resend, Google or Sentry tokens; `.env*` not in the repo. But the public repo's `_import/*.tgz` exposes the WhatsApp token | Blocker B1 |
 | S22 Dependencies | PASS | `npm audit --omit=dev`: 0 vulnerabilities; Next 15.5.28 | — |
-| S23 Debug leaks | PASS | generic error JSON; production source maps go to Sentry only | — |
+| S23 Debug leaks | PASS | generic error JSON; live `*.js.map` returns 403 (maps go to Sentry only) | — |
 
 ## 3. Scalability and reliability
 
@@ -124,16 +125,16 @@ This is a technical and compliance checklist, not legal advice.
 | SSL, www and legacy subdomains | NEEDS-HUMAN | the middleware redirects `www`, `reading`, `learn`, `booking` and `support` (tested locally); the domains must be added in Vercel |
 | 404 / 500 pages | PASS | custom `app/not-found.tsx` (added) and `global-error.tsx` |
 | Titles, meta, OG, favicon | PASS | per-page metadata and OG image |
-| SPF / DKIM / DMARC | FAIL (DMARC) | SPF and DKIM are on the Resend `send.` subdomain; there is no `_dmarc` record |
-| Monitoring and backups | NEEDS-HUMAN | the Sentry DSN is configured; uptime monitoring and backups are not confirmed |
+| SPF / DKIM / DMARC | FAIL (DMARC) | SPF and DKIM are on the Resend `send.` subdomain; `dns.google` still returns no `_dmarc` TXT (21 Oct) |
+| Monitoring and backups | FAIL (backups) | Sentry configured; no uptime monitor; ginni2 Free plan has no backups (High) |
 | Phone and Lighthouse | PASS (emulated) | 19 routes in mobile and desktop emulation: no overflow, hydration errors or broken images; real phone still to do |
 | Tests | PASS | e2e 82/82, the browser reading flow (paywall → pass → draw → reveal → history), jest 18/18, `tsc` clean, `next build` clean |
 
 ## Cutover order
 
-1. B1: make the repo private, then rotate the WhatsApp token.
-2. B3 and B4: apply the SQL, run the migration, then load the env and redeploy.
-3. B5–B7: webhooks, business details, Auth rate limits.
-4. Make a ₹1 live test: buy the pass, book a personal reading, buy the Kundli report.
-5. Move `thedivinetarotonline.com`, `www`, `reading`, `learn`, `booking` and `support` to this project. Leave `chat` on the old app until 20 Nov 2026.
-6. After 20 Nov 2026, once the old subscriptions are cancelled: point `chat` here and pause the old Tdt-Ginni project.
+1. B1 now: make the repo private, then rotate the WhatsApp token.
+2. B5–B7: webhooks, business details, Supabase Auth rate limits. Cancel the old Razorpay subscriptions (B2).
+3. Push the latest code, then make a ₹1 live test of each payment flow.
+4. Re-run `npm run migrate:legacy -- --commit`.
+5. Move `thedivinetarotonline.com`, `www`, `reading`, `learn`, `booking` and `support` to this Vercel project. Leave `chat` on the old app until 20 Nov 2026.
+6. After 20 Nov 2026: point `chat` here and pause the old Tdt-Ginni project.
