@@ -89,15 +89,14 @@ const Footer = () => {
     { name: 'YouTube — 2nd channel', href: 'https://youtube.com/@thedivineetarot', icon: YoutubeIcon },
   ];
 
+  // Same links as the live site's footer.
   const quickLinks = [
     { nameKey: 'nav.about', name: 'About', href: '/about' },
-    { nameKey: 'nav.reading', name: 'Reading', href: '/reading' },
-    { nameKey: 'nav.course', name: 'Courses', href: '/courses' },
-    { nameKey: 'nav.kundli', name: 'Kundli Milan', href: '/kundli-milan' },
-    { nameKey: 'nav.personalReading', name: 'Personal Reading', href: '/personal-reading' },
     { nameKey: 'footer.quickLinks.support', name: 'Support', href: '/support' },
   ];
 
+  // Privacy as on the live site, plus Terms and Refund & Cancellation, which
+  // the payment gateway requires to be reachable from every page.
   const legalLinks = [
     { nameKey: 'footer.privacy', name: 'Privacy', href: '/privacy' },
     { nameKey: 'footer.terms', name: 'Terms', href: '/terms' },
@@ -112,7 +111,7 @@ const Footer = () => {
 
   return (
     <footer className="w-full bg-[#0B0B0F] border-t border-white/10">
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-6 py-14 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 px-6 py-14">
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-500/10 border border-amber-500/30 flex items-center justify-center overflow-hidden">
@@ -132,7 +131,7 @@ const Footer = () => {
           <h4 className="font-serif text-sm uppercase tracking-wider text-[#A1A1AA] mb-2">
             {isHydrated ? t('footer.quickLinks.title') : 'Quick Links'}
           </h4>
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-2">
+          <ul className="space-y-2">
             {quickLinks.map((link) => (
               <li key={link.name}>
                 <Link
@@ -163,6 +162,9 @@ const Footer = () => {
               </a>
             ))}
           </div>
+          <Link href="/privacy" className="mt-3 text-xs text-[#A1A1AA] hover:text-amber-500 transition-colors w-fit">
+            {isHydrated ? t('footer.privacy') : 'Privacy'}
+          </Link>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -220,19 +222,19 @@ const Footer = () => {
         </div>
       </div>
 
-      <div className="mx-auto mt-4 flex max-w-7xl flex-col justify-between gap-3 border-t border-white/10 px-6 pb-8 pt-6 text-sm text-gray-400 md:flex-row">
+      <div className="border-t border-white/10 mt-4 pt-6 flex flex-col md:flex-row justify-between text-sm text-gray-400 px-6">
         <div>
           {t('footer.designedBy')}{' '}
           <a
             href="https://sitelytc.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-amber-400 underline underline-offset-2 hover:text-amber-300 transition-colors duration-200"
+            className="text-amber-400 underline hover:text-amber-300 transition-colors duration-200"
           >
             Sitelytc
           </a>
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-center gap-4 mt-2 md:mt-0">
           {legalLinks.map((link) => (
             <Link key={link.href} href={link.href} className="text-gray-400 transition-colors duration-200 hover:text-amber-400">
               {isHydrated ? t(link.nameKey) : link.name}
@@ -244,8 +246,8 @@ const Footer = () => {
               Cookie settings
             </button>
           ) : null}
-          <span className="h-3 w-px bg-white/10" aria-hidden />
-          <span>&copy; {new Date().getFullYear()} {t('footer.rights')}</span>
+          <span className="w-px h-3 bg-white/10" aria-hidden />
+          <span>&copy; {new Date().getFullYear()}</span>
         </div>
       </div>
     </footer>

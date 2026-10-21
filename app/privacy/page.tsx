@@ -14,16 +14,16 @@ const UPDATED = '20 October 2026';
 export default function PrivacyPolicyPage() {
   return (
     <div className="relative min-h-screen bg-background text-foreground">
-      <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top,rgba(244,197,66,0.10)_0%,transparent_55%)]" />
+      <div className="absolute inset-0" />
 
-      <div className="relative mx-auto max-w-3xl px-6 py-16 md:py-24">
+      <div className="relative mx-auto max-w-3xl px-6 py-16">
         <header className="mb-10">
           <h1 className="font-heading text-3xl md:text-4xl text-foreground mb-3">Privacy Policy</h1>
           <p className="text-sm text-foreground-muted">Last updated: {UPDATED}</p>
-          <div className="mt-5 h-px w-24 bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
+          <div className="h-px w-24 bg-gradient-to-r from-transparent to-transparent" />
         </header>
 
-        <div className="space-y-8 text-foreground-secondary leading-relaxed text-[15px]">
+        <div className="text-foreground-secondary leading-relaxed text-[15px]">
           <p>
             The Divine Tarot (&ldquo;we&rdquo;, &ldquo;us&rdquo;) respects your privacy. This policy explains what
             information we collect when you use our website and services, how we use it, and the choices you have. By
@@ -31,7 +31,7 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <Section title="Information we collect">
-            <ul className="list-disc pl-5 space-y-2">
+            <ul className="space-y-2">
               <li><strong className="text-foreground">Contact details</strong> — such as your email address (and, if you opt in, your WhatsApp number) when you subscribe or request a reading or report.</li>
               <li><strong className="text-foreground">Reading &amp; compatibility inputs</strong> — details you enter for a reading or a Kundli Milan report, such as names, dates, times, and places of birth.</li>
               <li><strong className="text-foreground">Payment information</strong> — processed securely by our payment provider. We do not store your card details on our servers.</li>
@@ -43,7 +43,7 @@ export default function PrivacyPolicyPage() {
           </Section>
 
           <Section title="How we use your information">
-            <ul className="list-disc pl-5 space-y-2">
+            <ul className="space-y-2">
               <li>To provide readings, generate and deliver reports, and respond to your requests.</li>
               <li>To send the communications you asked for (for example daily guidance by email or WhatsApp). You can opt out at any time.</li>
               <li>To process payments and deliver purchased content.</li>
@@ -68,7 +68,7 @@ export default function PrivacyPolicyPage() {
               if you click &ldquo;Accept&rdquo; on the cookie banner; you can change your choice any time with
               &ldquo;Cookie settings&rdquo; in the footer.
             </p>
-            <ul className="list-disc space-y-1 pl-5">
+            <ul className="space-y-1">
               <li><strong>sb-…-auth-token</strong> (essential, up to 1 year) — keeps you logged in to Ginni Ki Baatein.</li>
               <li><strong>tdt_bk</strong> (essential, 14 days) — opens your personal-reading form after payment.</li>
               <li><strong>Razorpay</strong> (essential, set on the payment window) — fraud checks during checkout.</li>
@@ -89,7 +89,7 @@ export default function PrivacyPolicyPage() {
             <p>
               You can unsubscribe from communications at any time, and you may request access to, correction of, or
               deletion of your personal information, subject to applicable law. To delete your account, use the{' '}
-              <Link href="/delete-account" className="text-gold underline underline-offset-2 hover:text-gold-light">Delete your account</Link> page.
+              <Link href="/delete-account" className="text-gold underline hover:text-gold-light">Delete your account</Link> page.
             </p>
           </Section>
 
@@ -108,7 +108,7 @@ export default function PrivacyPolicyPage() {
             <p>
               If you have any questions about this policy or how your data is handled, or if you&rsquo;d like to reach
               our team for any reason, you can{' '}
-              <Link href="/contact" className="text-gold underline underline-offset-2 hover:text-gold-light">
+              <Link href="/contact" className="text-gold underline hover:text-gold-light">
                 get in touch with us here
               </Link>
               .

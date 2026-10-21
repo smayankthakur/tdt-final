@@ -121,20 +121,8 @@ export default async function RootLayout({
 
   return (
     <html lang={lang === 'hi' ? 'hi' : 'en'}>
-      <head>
-        {/* Brand fonts. The design tokens (Cinzel / Playfair Display / Inter,
-            Cormorant Garamond for booking, Noto Sans Devanagari for Hindi) were
-            referenced everywhere but never loaded, so headings fell back to
-            Times. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap"
-        />
-      </head>
       <body
-        className="antialiased bg-[rgb(var(--background))] text-[rgb(var(--foreground))]"
+        className="text-[rgb(var(--foreground))]"
         suppressHydrationWarning
       >
         {/*

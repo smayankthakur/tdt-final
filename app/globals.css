@@ -45,9 +45,20 @@
     --ring: var(--gold);
     --radius: 1rem;
 
+    /* The main pages (home, about, premium, contact, kundli milan, legal) use
+       the browser's own serif / sans-serif fonts, exactly like the live site,
+       which never loaded the brand fonts. Reading, courses, personal reading
+       and support load them (BrandFonts) and switch them on with .brand-fonts. */
+    --font-heading: serif;
+    --font-serif: serif;
+    --font-sans: sans-serif;
+  }
+
+  .brand-fonts {
     --font-heading: 'Cinzel', serif;
     --font-serif: 'Playfair Display', serif;
     --font-sans: 'Inter', sans-serif;
+    font-family: var(--font-sans);
   }
 
   * {

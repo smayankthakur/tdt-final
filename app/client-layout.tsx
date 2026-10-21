@@ -8,7 +8,7 @@ import ContentGuard from '@/components/ContentGuard';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[rgb(var(--background))] text-[rgb(var(--foreground))]">
+    <div className="min-h-screen text-[rgb(var(--foreground))]">
       <UniversalProtectionOverlay />
       <ContentGuard>
         <ClientProviders>
@@ -20,7 +20,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
               Skip to content
             </a>
             <Header />
-            <main id="main" tabIndex={-1} className="relative min-h-0 flex-1 focus:outline-none">
+            <main id="main" tabIndex={-1} className="relative flex-1 focus:outline-none">
               {children}
             </main>
             <Footer />

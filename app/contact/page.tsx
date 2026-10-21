@@ -74,9 +74,9 @@ export default function ContactPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="text-center p-8 rounded-2xl bg-[rgb(var(--surface))/50] border border-[rgb(var(--gold))/20]"
+              className="text-center p-8 rounded-2xl border border-[rgb(var(--gold))/20]"
             >
-              <div className="text-4xl mb-4">✨</div>
+              <div className="mb-4">✨</div>
                <h3 className="font-heading text-xl text-[rgb(var(--foreground))] mb-2">
                   {t('contact.success.title')}
                 </h3>
@@ -85,7 +85,7 @@ export default function ContactPage() {
                 </p>
             </motion.div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="">
               <FloatingInput
                 label={t('contact.name')}
                 value={formData.name}

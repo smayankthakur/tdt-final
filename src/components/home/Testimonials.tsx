@@ -16,16 +16,16 @@ export default function Testimonials() {
   const { t, isHydrated } = useLanguage();
 
   return (
-    <section className="overflow-hidden bg-background py-16 md:py-20">
+    <section className="py-16 md:py-20 bg-background overflow-hidden">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mb-12 text-center"
+          className="text-center mb-12"
         >
-          <h2 className="font-heading text-2xl text-foreground md:text-3xl lg:text-4xl">
+          <h2 className="font-heading text-2xl md:text-3xl lg:text-4xl text-foreground">
             {isHydrated ? t('testimonials.title') : 'What Seekers Say'}
           </h2>
           <p className="mt-4 text-foreground-muted">
@@ -42,7 +42,7 @@ export default function Testimonials() {
             {TESTIMONIALS.map((item) => (
               <div
                 key={item.name + item.text.slice(0, 12)}
-                className="flex h-full flex-col rounded-2xl border border-gold-10 bg-surface-60 p-6 transition-all duration-300 hover:border-gold-30"
+                className="flex flex-col p-6 rounded-2xl bg-surface-60 border border-gold-10 hover:border-gold-30 hover:shadow-gold transition-all duration-300 h-full"
               >
                 {item.rating ? (
                   <div className="mb-4 flex gap-1" aria-label={`${item.rating} out of 5`}>
@@ -51,10 +51,15 @@ export default function Testimonials() {
                     ))}
                   </div>
                 ) : null}
-                <p className="mb-6 flex-grow text-sm italic leading-relaxed text-foreground-secondary">&ldquo;{item.text}&rdquo;</p>
-                <div>
-                  <p className="font-medium text-foreground">{item.name}</p>
-                  <p className="text-xs text-foreground-muted">via {item.source}</p>
+                <p className="text-foreground-secondary italic mb-6 leading-relaxed text-sm flex-grow">&ldquo;{item.text}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-gold-10 to-secondary-10 flex items-center justify-center border border-gold-20">
+                    <span className="text-foreground font-medium">{item.name.charAt(0)}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">{item.name}</p>
+                    <p className="text-xs text-foreground-muted">{item.subtitle ?? `via ${item.source}`}</p>
+                  </div>
                 </div>
               </div>
             ))}

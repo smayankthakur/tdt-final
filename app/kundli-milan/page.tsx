@@ -20,9 +20,9 @@ import { useLanguage } from '@/hooks/useLanguage';
 // IANA zones: the offset is worked out for the actual birth date, so
 // daylight saving (UK, Europe, USA, Canada, Australia) is handled correctly.
 const TIMEZONES = [
-  { label: 'India (IST)', value: 'Asia/Kolkata' },
-  { label: 'Nepal', value: 'Asia/Kathmandu' },
-  { label: 'Pakistan', value: 'Asia/Karachi' },
+  { label: 'India (IST +5:30)', value: 'Asia/Kolkata' },
+  { label: 'Nepal (+5:45)', value: 'Asia/Kathmandu' },
+  { label: 'Pakistan (+5:00)', value: 'Asia/Karachi' },
   { label: 'Bangladesh', value: 'Asia/Dhaka' },
   { label: 'Sri Lanka', value: 'Asia/Colombo' },
   { label: 'UAE / Oman (Gulf)', value: 'Asia/Dubai' },
@@ -34,12 +34,12 @@ const TIMEZONES = [
   { label: 'US / Canada — Central', value: 'America/Chicago' },
   { label: 'US / Canada — Pacific', value: 'America/Los_Angeles' },
   { label: 'Australia — Sydney', value: 'Australia/Sydney' },
-  { label: 'UTC', value: 'UTC' },
+  { label: 'UTC (+0:00)', value: 'UTC' },
 ];
 
 const FIELD =
   'kundli-field block w-full min-w-0 max-w-full bg-[#0B0F1A] border border-[#2A2F3A] rounded-xl py-3 pl-10 pr-4 text-white text-base ' +
-  'focus:outline-none focus:border-[#D4AF37] focus:shadow-[0_0_10px_rgba(212,175,55,0.3)] transition-all duration-300 [color-scheme:dark]';
+  'focus:outline-none focus:border-[#D4AF37] focus:shadow-[0_0_10px_rgba(212,175,55,0.3)] transition-all duration-300';
 
 interface FormState {
   name: string;
@@ -158,20 +158,20 @@ export default function KundliMilanPage() {
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
       {/* Ambient mystical background */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(1200px_600px_at_50%_-10%,rgba(244,197,66,0.12),transparent_55%),radial-gradient(900px_520px_at_15%_85%,rgba(193,18,31,0.10),transparent_55%),radial-gradient(700px_500px_at_85%_30%,rgba(124,58,237,0.10),transparent_60%)]" />
+        <div className="absolute inset-0" />
       </div>
 
-      <div className="relative mx-auto max-w-4xl px-5 py-14 md:py-20">
+      <div className="relative mx-auto px-5 py-14 md:py-20">
         {/* Hero */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 text-gold text-xs uppercase tracking-[0.2em] mb-3">
+          <div className="inline-flex items-center gap-2 text-gold text-xs uppercase mb-3">
             <Sparkles className="h-4 w-4" /> {t('kundli.eyebrow')}
           </div>
-          <h1 className="font-heading text-3xl md:text-5xl leading-tight mb-3 text-glow">{t('kundli.title')}</h1>
+          <h1 className="font-heading text-3xl leading-tight mb-3 text-glow">{t('kundli.title')}</h1>
           <p className="text-foreground-secondary max-w-xl mx-auto">
             {t('kundli.subtitle')}
           </p>
-          <div className="mx-auto mt-5 h-px w-24 bg-gradient-to-r from-transparent via-gold/60 to-transparent" />
+          <div className="mx-auto h-px w-24 bg-gradient-to-r from-transparent to-transparent" />
         </div>
 
         {/* Input cards */}
@@ -186,12 +186,12 @@ export default function KundliMilanPage() {
             disabled={!canCalculate}
             className={cn(
               buttonVariants({ variant: 'primary', size: 'lg' }),
-              'btn-cta-pulse w-full sm:w-auto disabled:opacity-40 disabled:pointer-events-none'
+              'btn-cta-pulse w-full sm:w-auto disabled:opacity-100 disabled:pointer-events-none'
             )}
           >
             <Heart className="h-5 w-5" /> {t('kundli.calculate')}
           </button>
-          {error && <p className="text-[rgb(var(--secondary))] text-sm">{error}</p>}
+          {error && <p className="text-sm">{error}</p>}
           <p className="text-xs text-foreground-muted max-w-md text-center italic">
             {t('kundli.timeNote')}
           </p>
@@ -205,25 +205,25 @@ export default function KundliMilanPage() {
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="mt-14 scroll-mt-24"
+              className="scroll-mt-24"
             >
               {purchased ? (
                 <>
                   <Scorecard result={result} />
 
-                  <div className="mt-8 rounded-2xl border border-gold/25 bg-card/40 backdrop-blur-sm p-6 md:p-8">
+                  <div className="mt-8 rounded-2xl border backdrop-blur-sm p-6 md:p-8">
                     {delivered ? (
                       <div className="text-center py-4">
-                        <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-400 mb-3" />
-                        <h3 className="font-heading text-xl mb-1">{t('kundli.sentTitle')}</h3>
+                        <CheckCircle2 className="mx-auto h-10 w-10 mb-3" />
+                        <h3 className="font-heading text-xl">{t('kundli.sentTitle')}</h3>
                         <p className="text-foreground-secondary text-sm">
                           {t('kundli.sentText', { email })}
                         </p>
                       </div>
                     ) : (
                       <div className="text-center py-4">
-                        <AlertTriangle className="mx-auto h-10 w-10 text-amber-400 mb-3" />
-                        <h3 className="font-heading text-xl mb-1">Payment received ✓</h3>
+                        <AlertTriangle className="mx-auto h-10 w-10 mb-3" />
+                        <h3 className="font-heading text-xl">Payment received ✓</h3>
                         <p className="text-foreground-secondary text-sm">
                           Your payment went through, but we hit a snag emailing the report to{' '}
                           <span className="text-foreground">{email}</span>. Please{' '}
@@ -236,8 +236,8 @@ export default function KundliMilanPage() {
                 </>
               ) : (
                 /* Paywall gate — shown the moment Calculate is pressed, BEFORE the result */
-                <div className="rounded-2xl border border-gold/25 bg-card/40 backdrop-blur-sm p-6 md:p-10 text-center">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gold/15 border border-gold/30">
+                <div className="rounded-2xl border backdrop-blur-sm p-6 text-center">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-gold/30">
                     <Lock className="h-8 w-8 text-gold" />
                   </div>
                   <h2 className="font-heading text-2xl md:text-3xl mb-2 text-glow">{t('kundli.readyTitle')}</h2>
@@ -245,15 +245,15 @@ export default function KundliMilanPage() {
                     {t('kundli.readyText')}
                   </p>
 
-                  <ul className="mx-auto mb-7 max-w-sm space-y-2 text-left text-sm text-foreground-secondary">
+                  <ul className="mx-auto max-w-sm space-y-2 text-left text-sm text-foreground-secondary">
                     {[
                       t('kundli.f1'),
                       t('kundli.f2'),
                       t('kundli.f3'),
                       t('kundli.f4'),
                     ].map((f) => (
-                      <li key={f} className="flex items-start gap-2">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                      <li key={f} className="flex gap-2">
+                        <Check className="h-4 w-4 shrink-0" />
                         <span>{f}</span>
                       </li>
                     ))}
@@ -266,17 +266,17 @@ export default function KundliMilanPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="rounded-full bg-card/60 border border-gold/20 px-4 py-3 text-sm text-foreground placeholder-foreground-muted outline-none focus:border-gold/60 min-w-0 sm:w-60"
+                      className="rounded-full border border-gold/20 px-4 py-3 text-sm text-foreground outline-none min-w-0"
                     />
                     <button
                       onClick={handleBuy}
                       disabled={buying}
-                      className={cn(buttonVariants({ variant: 'primary', size: 'md' }), 'whitespace-nowrap disabled:opacity-60')}
+                      className={cn(buttonVariants({ variant: 'primary', size: 'md' }), 'whitespace-nowrap disabled:opacity-100')}
                     >
                       {buying ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{t('kundli.pay')}</>}
                     </button>
                   </div>
-                  {buyError && <p className="text-[rgb(var(--secondary))] text-xs mt-3">{buyError}</p>}
+                  {buyError && <p className="text-xs mt-3">{buyError}</p>}
                   <p className="mt-4 text-xs text-foreground-muted">{t('kundli.secure')}</p>
                 </div>
               )}
@@ -284,7 +284,7 @@ export default function KundliMilanPage() {
           )}
         </AnimatePresence>
 
-        <p className="mt-14 text-center text-xs text-foreground-muted max-w-lg mx-auto">
+        <p className="text-center text-xs text-foreground-muted max-w-lg mx-auto">
           {t('kundli.disclaimer')}
         </p>
       </div>
@@ -307,9 +307,9 @@ function PersonCard({
   return (
     // focus-within lifts the card above its neighbour while a picker is open,
     // so the popover is never hidden behind the next card.
-    <div className="relative min-w-0 rounded-2xl focus-within:z-20 border border-gold/10 bg-card/40 backdrop-blur-sm p-5 md:p-6">
-      <div className="flex items-baseline gap-2 mb-5 pb-4 border-b border-white/5">
-        <span className="h-2 w-2 rounded-full" style={{ background: accent }} />
+    <div className="relative min-w-0 rounded-2xl focus-within:z-20 border backdrop-blur-sm p-5">
+      <div className="flex gap-2 mb-5 pb-4 border-b border-white/5">
+        <span className="rounded-full" style={{ background: accent }} />
         <h3 className="font-heading text-lg">{title}</h3>
         <span className="text-xs text-foreground-muted">{subtitle}</span>
       </div>
@@ -325,7 +325,7 @@ function PersonCard({
           />
         </Field>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
+        <div className="grid gap-3">
           <Field id={`${uid}-dob`} label={t('kundli.dob')} icon={<Calendar className="h-5 w-5" />}>
             <DatePicker
               id={`${uid}-dob`}
@@ -370,7 +370,7 @@ function Field({
 }) {
   return (
     <div className="w-full min-w-0">
-      <label htmlFor={id} className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gold/90">
+      <label htmlFor={id} className="block text-[11px] font-semibold uppercase tracking-wider">
         {label}
       </label>
       <div className="relative min-w-0">
@@ -387,9 +387,9 @@ function Field({
 }
 
 const LEVEL_STYLE: Record<string, { badge: string; bar: string; label: string }> = {
-  strong: { badge: 'bg-emerald-500 text-emerald-950 shadow-[0_0_14px_rgba(16,185,129,0.45)]', bar: 'rgb(16 185 129)', label: 'Strong' },
-  fair: { badge: 'bg-amber-400 text-amber-950 shadow-[0_0_14px_rgba(251,191,36,0.45)]', bar: 'rgb(251 191 36)', label: 'Fair' },
-  weak: { badge: 'bg-red-500 text-white shadow-[0_0_14px_rgba(239,68,68,0.45)]', bar: 'rgb(239 68 68)', label: 'Needs care' },
+  strong: { badge: '', bar: 'rgb(16 185 129)', label: 'Strong' },
+  fair: { badge: '', bar: 'rgb(251 191 36)', label: 'Fair' },
+  weak: { badge: 'text-white', bar: 'rgb(239 68 68)', label: 'Needs care' },
 };
 
 function Scorecard({ result }: { result: MatchResult }) {
@@ -399,26 +399,26 @@ function Scorecard({ result }: { result: MatchResult }) {
   const weakAreas = impacts.filter((x) => x.i.level === 'weak').map((x) => x.i.area);
 
   return (
-    <div className="space-y-6">
+    <div className="">
       {/* Headline score */}
-      <div className="rounded-2xl border border-gold/15 bg-card/40 backdrop-blur-sm p-6 md:p-8 text-center">
-        <div className="text-xs uppercase tracking-[0.2em] text-foreground-secondary mb-2">Your compatibility</div>
-        <div className="font-heading text-6xl font-bold text-gold leading-none text-glow">
+      <div className="rounded-2xl border backdrop-blur-sm p-6 md:p-8 text-center">
+        <div className="text-xs uppercase text-foreground-secondary mb-2">Your compatibility</div>
+        <div className="font-heading font-bold text-gold text-glow">
           {result.total}
           <span className="text-2xl text-foreground-muted"> / 36</span>
         </div>
         <div className="mt-2 text-foreground">{result.verdict}</div>
-        <div className="mx-auto mt-4 h-2 max-w-md overflow-hidden rounded-full bg-white/10">
+        <div className="mx-auto mt-4 max-w-md overflow-hidden rounded-full bg-white/10">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-[rgb(var(--accent-start))] via-gold to-emerald-500"
+            className="h-full rounded-full bg-gradient-to-r from-[rgb(var(--accent-start))]"
             initial={{ width: 0 }}
             animate={{ width: `${pct}%` }}
             transition={{ duration: 0.9, ease: 'easeOut' }}
           />
         </div>
 
-        <p className="mt-5 text-sm text-foreground-secondary max-w-xl mx-auto">
-          <span className="text-emerald-300 font-semibold">{strongCount} of 8</span> life areas are strongly aligned.
+        <p className="text-sm text-foreground-secondary max-w-xl mx-auto">
+          <span className="font-semibold">{strongCount} of 8</span> life areas are strongly aligned.
           {weakAreas.length > 0 ? (
             <> The areas that need the most care: <span className="text-red-300">{weakAreas.join(', ')}</span>.</>
           ) : (
@@ -427,8 +427,8 @@ function Scorecard({ result }: { result: MatchResult }) {
         </p>
 
         {result.doshas.length > 0 && (
-          <div className="mt-4 inline-flex items-start gap-2 rounded-xl border border-[rgb(var(--secondary))]/40 bg-[rgb(var(--secondary))]/10 px-4 py-2 text-sm text-red-200">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="mt-4 inline-flex gap-2 rounded-xl border bg-[rgb(var(--secondary))]/10 px-4 py-2 text-sm">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
             <span><strong>{result.doshas.join(' & ')}</strong> present — often mitigable with traditional remedies.</span>
           </div>
         )}
@@ -441,7 +441,7 @@ function Scorecard({ result }: { result: MatchResult }) {
 
       {/* All eight points */}
       <div>
-        <h2 className="font-heading text-xl md:text-2xl text-center mb-1">The 8 Kootas — and what they mean for you</h2>
+        <h2 className="font-heading text-xl text-center">The 8 Kootas — and what they mean for you</h2>
         <p className="text-center text-sm text-foreground-muted mb-6">
           Each factor carries a different weight. Heavier factors shape your life together the most.
         </p>
@@ -451,8 +451,8 @@ function Scorecard({ result }: { result: MatchResult }) {
             const ratio = k.max ? k.score / k.max : 0;
             const style = LEVEL_STYLE[i.level];
             return (
-              <div key={k.key} className="rounded-2xl border border-gold/10 bg-card/40 backdrop-blur-sm p-5">
-                <div className="flex items-start justify-between gap-3">
+              <div key={k.key} className="rounded-2xl border backdrop-blur-sm p-5">
+                <div className="flex justify-between gap-3">
                   <div>
                     <div className="font-heading text-base">{k.label}</div>
                     <div className="text-xs text-foreground-muted">{i.area}</div>
@@ -463,7 +463,7 @@ function Scorecard({ result }: { result: MatchResult }) {
                 </div>
 
                 <div className="mt-3 flex items-center gap-3">
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
+                  <div className="flex-1 overflow-hidden rounded-full bg-white/10">
                     <motion.div
                       className="h-full rounded-full"
                       style={{ background: style.bar }}
@@ -472,13 +472,13 @@ function Scorecard({ result }: { result: MatchResult }) {
                       transition={{ duration: 0.7, ease: 'easeOut' }}
                     />
                   </div>
-                  <span className="text-sm font-mono" style={{ color: style.bar }}>{k.score}/{k.max}</span>
+                  <span className="text-sm" style={{ color: style.bar }}>{k.score}/{k.max}</span>
                 </div>
 
                 <p className="mt-3 text-sm text-foreground-secondary">{i.impact}</p>
 
-                <div className="mt-3 flex items-center gap-1.5 text-[11px] text-foreground-muted">
-                  <Heart className="h-3 w-3 text-gold/70" />
+                <div className="mt-3 flex items-center text-[11px] text-foreground-muted">
+                  <Heart className="h-3 w-3" />
                   Impact on your bond: <span className="text-foreground-secondary font-medium">{i.weight}% of the total match</span>
                 </div>
               </div>

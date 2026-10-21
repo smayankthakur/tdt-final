@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import '@/gkb/styles/gkb.css';
+import BrandFonts from '@/components/system/BrandFonts';
 
 export const metadata: Metadata = {
   title: 'Ginni Ki Baatein — Tarot Reading Chat',
@@ -25,8 +26,9 @@ export const viewport: Viewport = {
 
 export default function ReadingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <div className="brand-fonts">
+      <BrandFonts />
       {children}
-    </>
+    </div>
   );
 }

@@ -140,7 +140,7 @@ export const siteCopy: Record<string, Copy> = {
   'footer.quickLinks.contact': { en: 'Contact', hi: 'संपर्क', hinglish: 'Contact' },
   'footer.terms': { en: 'Terms', hi: 'नियम व शर्तें', hinglish: 'Terms' },
   'footer.refund': { en: 'Refund & Cancellation', hi: 'रिफ़ंड व रद्दीकरण', hinglish: 'Refund & Cancellation' },
-  'nav.course': { en: 'Courses', hi: 'कोर्स', hinglish: 'Courses' },
+  'nav.course': { en: 'Course', hi: 'कोर्स', hinglish: 'Course' },
   'footer.quickLinks.support': { en: 'Support', hi: 'सहायता', hinglish: 'Support' },
   'footer.connect.title': { en: 'Connect With Us', hi: 'हमसे जुड़ें', hinglish: 'Humse Judo' },
   'footer.cta.title': { en: 'Get Daily Divine Insights', hi: 'रोज़ का दिव्य संदेश पाएँ', hinglish: 'Roz ka Divine Message Pao' },

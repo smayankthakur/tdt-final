@@ -40,7 +40,7 @@ export default function WhySection() {
                 <span>{t('whySection.readings')}</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gold-10 text-gold text-sm font-medium border border-gold-20">
-                <Star className="h-4 w-4 fill-current" />
+                <Star className="h-4 w-4" />
                 <span>{isHydrated ? t('whySection.rating') : '4.9 rating'}</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gold-10 text-gold text-sm font-medium border border-gold-20">

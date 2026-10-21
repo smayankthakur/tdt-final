@@ -19,6 +19,8 @@ export interface Testimonial {
   text: string;
   source: 'YouTube' | 'Google' | 'Instagram' | 'WhatsApp' | 'Email';
   rating?: 1 | 2 | 3 | 4 | 5;
+  /** Line under the name, e.g. "Verified Reader" (default: "via <source>"). */
+  subtitle?: string;
 }
 
 export const TESTIMONIALS: Testimonial[] = [];

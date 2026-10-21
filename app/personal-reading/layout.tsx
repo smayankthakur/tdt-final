@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import '@/components/booking/booking.css';
+import BrandFonts from '@/components/system/BrandFonts';
 
 export const metadata: Metadata = {
   title: 'Book a Personal Reading with Bharti Singh',
@@ -15,5 +16,10 @@ export const metadata: Metadata = {
 };
 
 export default function PersonalReadingLayout({ children }: { children: React.ReactNode }) {
-  return <div className="bk">{children}</div>;
+  return (
+    <div className="bk brand-fonts">
+      <BrandFonts />
+      {children}
+    </div>
+  );
 }

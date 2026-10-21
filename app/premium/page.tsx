@@ -38,32 +38,32 @@ export default function PremiumPage() {
   return (
     <div className="py-12 md:py-20">
       <div className="mx-auto max-w-5xl px-4">
-        <div className="mb-12 text-center md:mb-16">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#FFD700]/30 bg-gradient-to-r from-[#FFD700]/20 to-[#FF4D4D]/10 px-4 py-2">
+        <div className="mb-12 text-center">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#FFD700]/30 bg-gradient-to-r px-4 py-2">
             <Crown className="h-4 w-4 text-[#FFD700]" aria-hidden />
             <span className="text-sm font-medium text-[#FFD700]">Ginni Ki Baatein — Full Access</span>
           </div>
-          <h1 className="mb-4 font-heading text-3xl font-bold text-white md:text-5xl">Unlock Your Complete Tarot Journey</h1>
+          <h1 className="mb-4 font-heading text-3xl font-bold text-white">Unlock Your Complete Tarot Journey</h1>
           <p className="mx-auto max-w-2xl text-lg text-[#A1A1AA]">
             One pass, every question, as many readings as your heart needs for {PASS_DAYS} days.
           </p>
         </div>
 
-        <div className="relative mx-auto max-w-xl rounded-2xl border border-[#FFD700]/30 bg-gradient-to-br from-[#FFD700]/10 to-[#FF4D4D]/5 p-6 shadow-2xl shadow-[#FFD700]/10 md:p-8">
-          <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-            <div className="flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#FFD700] to-[#FF4D4D] px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-black">
+        <div className="relative mx-auto max-w-xl rounded-2xl border border-[#FFD700]/30 bg-gradient-to-br p-6 shadow-2xl md:p-8">
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <div className="flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#FFD700] to-[#FF4D4D] px-4 text-xs font-bold uppercase tracking-wider text-black">
               <Sparkles className="h-3 w-3" aria-hidden />
               {PASS_DAYS}-day pass
             </div>
           </div>
-          <div className="mb-6 flex items-baseline gap-2">
+          <div className="mb-6 flex gap-2">
             <span className="text-5xl font-bold text-[#EAEAF0]">₹{PASS_PRICE_INR}</span>
             <span className="text-[#A1A1AA]">one-time · {PASS_DAYS} days · no auto-renewal</span>
           </div>
           <ul className="mb-8 space-y-3">
             {FEATURES.map((f) => (
-              <li key={f} className="flex items-start gap-3 text-[#D4D4D8]">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FFD700]/20">
+              <li key={f} className="flex gap-3 text-[#D4D4D8]">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full">
                   <Check className="h-3 w-3 text-[#FFD700]" aria-hidden />
                 </span>
                 {f}
@@ -81,7 +81,7 @@ export default function PremiumPage() {
           </p>
         </div>
 
-        <section className="mx-auto mt-16 max-w-3xl md:mt-20" aria-labelledby="premium-faq">
+        <section className="mx-auto max-w-3xl" aria-labelledby="premium-faq">
           <h2 id="premium-faq" className="mb-6 text-center font-heading text-2xl font-bold text-white md:text-3xl">
             Frequently Asked Questions
           </h2>
@@ -94,8 +94,8 @@ export default function PremiumPage() {
             ))}
           </div>
           <p className="mt-6 text-center text-sm text-[#A1A1AA]">
-            See our <Link href="/terms" className="text-[#FFD700] underline-offset-2 hover:underline">Terms</Link> and{' '}
-            <Link href="/refund-policy" className="text-[#FFD700] underline-offset-2 hover:underline">Refund &amp; Cancellation Policy</Link>.
+            See our <Link href="/terms" className="text-[#FFD700] hover:underline">Terms</Link> and{' '}
+            <Link href="/refund-policy" className="text-[#FFD700] hover:underline">Refund &amp; Cancellation Policy</Link>.
           </p>
         </section>
 

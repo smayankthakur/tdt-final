@@ -62,7 +62,7 @@ export default function AboutLayout({ children }: { children: React.ReactNode })
 
       <section
         aria-labelledby="faq-heading"
-        className="relative bg-[rgb(var(--background))] px-6 py-16 md:py-20"
+        className="relative px-6 py-16 md:py-20"
       >
         <div className="mx-auto max-w-3xl">
           <h2
@@ -75,7 +75,7 @@ export default function AboutLayout({ children }: { children: React.ReactNode })
             {FAQS.map((f) => (
               <div
                 key={f.q}
-                className="rounded-2xl border border-[rgb(var(--gold))/15] bg-[rgb(var(--surface))/40] p-6"
+                className="rounded-2xl border p-6"
               >
                 <dt className="font-heading text-lg text-[rgb(var(--foreground))]">{f.q}</dt>
                 <dd className="mt-2 text-[rgb(var(--foreground-secondary))] leading-relaxed">{f.a}</dd>
