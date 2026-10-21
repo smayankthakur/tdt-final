@@ -168,7 +168,7 @@ function applySecurityHeaders(res: NextResponse, csp?: string) {
     'accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(self "https://checkout.razorpay.com" "https://api.razorpay.com"), usb=()'
   );
   if (process.env.NODE_ENV === 'production') {
-    res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   }
   return res;
 }
