@@ -32,6 +32,18 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Switched off: the newsletter now goes out as Resend's own Monday /
+  // Wednesday / Friday broadcasts to the "Newsletter" segment, so this
+  // daily email would be a second, different email. It is no longer in
+  // vercel.json; set DAILY_NEWSLETTER_ENABLED=1 to bring it back.
+  if (process.env.DAILY_NEWSLETTER_ENABLED !== '1') {
+    return NextResponse.json({
+      success: true,
+      disabled: true,
+      message: 'Daily newsletter is off — the Resend Mon/Wed/Fri broadcasts are used instead.',
+    });
+  }
+
   const dryRun = req.nextUrl.searchParams.get('dryRun') === '1';
   const force = req.nextUrl.searchParams.get('force') === '1';
 

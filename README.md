@@ -69,11 +69,24 @@ npm run migrate:legacy -- --commit   # then for real
 
 | Path | When (UTC) | What |
 | --- | --- | --- |
-| `/api/newsletter/daily` | 03:00 daily | daily teaser email + WhatsApp |
-| `/api/youtube/cron` | 04:00 daily | emails subscribers when a new YouTube video is out |
+| `/api/youtube/cron` | 04:00 daily | when a new YouTube video is out, sends one Resend broadcast to the "Newsletter" segment |
 | `/api/cron/cleanup-accounts` | 21:00 daily | deletes accounts that never bought a pass after 24 h (client rule) |
 
 All require `Authorization: Bearer $CRON_SECRET` (Vercel sends it).
+
+## Newsletter
+
+The subscriber list is the Resend **"Newsletter" segment** (in the Resend account of `RESEND_API_KEY`).
+Resend sends the newsletter itself as automatic **Monday / Wednesday / Friday broadcasts** ("Auto MON/WED/FRI …")
+to that segment. The site:
+
+- adds every footer signup to the segment (and keeps a copy in `newsletter_subscribers`), and sends the welcome email;
+- applies unsubscribes from its own links (welcome / video emails) to the segment as well;
+- emails new YouTube uploads to the segment as one broadcast (`/api/youtube/cron`).
+
+The site's own daily email (`/api/newsletter/daily`) is switched off so nobody gets two newsletters; set
+`DAILY_NEWSLETTER_ENABLED=1` and add the cron back to `vercel.json` only if the Resend broadcasts are ever stopped.
+The job that creates the Mon/Wed/Fri broadcasts is not in this repo — find it before retiring the old sites.
 
 ## Domains (Vercel)
 

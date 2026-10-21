@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { verifyUnsubscribeToken } from "@/lib/newsletter/unsubscribe";
+import { removeFromNewsletterList } from "@/lib/newsletter/resendList";
 
 // GET  ?email=&token=  -> the link in the email footer; redirects to the confirmation page.
 // POST ?email=&token=  -> Gmail/Apple one-click unsubscribe (List-Unsubscribe-Post); plain 200.
@@ -18,6 +19,8 @@ async function unsubscribe(req) {
     console.error("unsubscribe failed:", error);
     return { ok: false, status: 500 };
   }
+  // Also stop the Resend broadcasts (Mon/Wed/Fri newsletter, new videos).
+  if (!(await removeFromNewsletterList(email))) return { ok: false, status: 500 };
   return { ok: true, status: 200 };
 }
 

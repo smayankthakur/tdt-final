@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendVideoEmailBatch, type VideoInfo } from '@/lib/newsletter/videoEmail';
+import { sendVideoEmailBatch, videoEmailHtml, type VideoInfo } from '@/lib/newsletter/videoEmail';
+import { broadcastToNewsletterList, newsletterSegmentId } from '@/lib/newsletter/resendList';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -101,23 +102,46 @@ export async function GET(req: NextRequest) {
   }
 
   // --- New video: gather subscribers ---
-  const { data: subs, error: subErr } = await supabase
-    .from('newsletter_subscribers')
-    .select('email')
-    .eq('status', 'subscribed');
-
-  if (subErr) {
-    console.error('[youtube-newsletter] subscriber query failed', subErr);
-    return NextResponse.json({ success: false, message: 'Subscriber query failed.' }, { status: 500 });
+  // Preferred: one Resend broadcast to the "Newsletter" segment — the same
+  // list as the Mon/Wed/Fri newsletter; Resend fills in each person's
+  // unsubscribe link. Fallback (segment missing): the site's own list.
+  let recipients = 0;
+  let sent = 0;
+  let failed = 0;
+  let via = 'resend-broadcast';
+  const from = process.env.RESEND_FROM_EMAIL || 'The Divine Tarot <hello@thedivinetarotonline.com>';
+  if (await newsletterSegmentId()) {
+    const b = await broadcastToNewsletterList({
+      name: `New video ${latest.videoId}`,
+      subject: `🔮 New reading is live: ${latest.title}`.slice(0, 180),
+      html: videoEmailHtml(latest).replace(
+        '__UNSUB__',
+        '<a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#9b8cff;">Unsubscribe</a>'
+      ),
+      from,
+      replyTo: 'thedivinetarot111@gmail.com',
+    });
+    if (!b.ok) {
+      console.error('[youtube-newsletter] broadcast failed', b.error);
+      // Leave the state unchanged so the next run retries this video.
+      return NextResponse.json({ success: false, message: `Broadcast failed: ${b.error}` }, { status: 502 });
+    }
+    sent = 1;
+  } else {
+    via = 'site-list';
+    const { data: subs, error: subErr } = await supabase
+      .from('newsletter_subscribers')
+      .select('email')
+      .eq('status', 'subscribed');
+    if (subErr) {
+      console.error('[youtube-newsletter] subscriber query failed', subErr);
+      return NextResponse.json({ success: false, message: 'Subscriber query failed.' }, { status: 500 });
+    }
+    const list = Array.from(new Set((subs ?? []).map((s: { email: string }) => s.email).filter(Boolean)));
+    recipients = list.length;
+    ({ sent, failed } = await sendVideoEmailBatch(list, latest));
   }
 
-  const recipients = Array.from(
-    new Set((subs ?? []).map((s: { email: string }) => s.email).filter(Boolean))
-  );
-
-  const { sent, failed } = await sendVideoEmailBatch(recipients, latest);
-
-  // --- Record the video so we never send it again ---
   await supabase
     .from('youtube_newsletter_state')
     .upsert({
@@ -132,7 +156,8 @@ export async function GET(req: NextRequest) {
     success: true,
     message: 'New video emailed to subscribers.',
     video: { id: latest.videoId, title: latest.title, url: latest.url },
-    recipients: recipients.length,
+    via,
+    recipients,
     sent,
     failed,
   });

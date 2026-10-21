@@ -3,6 +3,7 @@ import { createAdminClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import { clientIp, hitLimit } from '@/lib/rateLimitDb';
 import { isMailConfigured, sendMail } from '@/lib/mail';
 import { unsubscribeParts } from '@/lib/newsletter/unsubscribe';
+import { addToNewsletterList } from '@/lib/newsletter/resendList';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,9 +11,10 @@ export const dynamic = 'force-dynamic';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SITE = () => process.env.NEXT_PUBLIC_SITE_URL || 'https://thedivinetarotonline.com';
 
-// Footer "Get Daily Divine Insights" signups. One list for the whole site:
-// newsletter_subscribers (email) + whatsapp_subscribers (optional number),
-// which the daily and YouTube crons read.
+// Footer "Get Daily Divine Insights" signups. The list that gets mailed is the
+// Resend "Newsletter" segment (Monday / Wednesday / Friday broadcasts + the
+// new-video email), so every signup is added there; newsletter_subscribers
+// (email) + whatsapp_subscribers (optional number) keep the site's own copy.
 export async function POST(req: Request) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ error: 'Subscriptions are not set up yet. Please try again soon.' }, { status: 503 });
@@ -45,13 +47,18 @@ export async function POST(req: Request) {
       .then(({ error: e }) => e && console.error('[subscribe] whatsapp upsert failed', e));
   }
 
+  // Join the Resend list that actually gets the newsletter. A Resend hiccup
+  // doesn't fail the signup (the row above is kept); it is logged instead.
+  const listed = await addToNewsletterList(email);
+  if (!listed) console.error('[subscribe] could not add to the Resend Newsletter list:', email.replace(/^(.).*@/, '$1***@'));
+
   // Welcome mail only for brand-new (or returning) subscribers.
   if (existing?.status !== 'subscribed' && isMailConfigured()) {
     const unsub = unsubscribeParts(email).html;
     await sendMail({
       to: email,
       subject: 'Welcome to The Divine Tarot ✨',
-      html: `<p>Namaste 🙏</p><p>Ab aapko roz ka Divine Insight milega.</p>
+      html: `<p>Namaste 🙏</p><p>Ab har Monday, Wednesday aur Friday aapko Divine Insight milega — cards ka message, courses aur special offers.</p>
              <p><a href="${SITE()}/reading">Ginni se apna sawaal poocho →</a></p>
              <p style="font-size:12px;color:#888">${unsub}</p>`,
     }).catch((e) => console.error('[subscribe] welcome mail failed', e));

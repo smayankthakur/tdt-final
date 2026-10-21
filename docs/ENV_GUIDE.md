@@ -76,7 +76,9 @@ Course "Enrol Now" buttons use Razorpay payment links stored in `src/lib/courses
 | --- | --- | --- |
 | `RESEND_API_KEY` | Required | password-reset emails, newsletter, support tickets, Kundli reports |
 | `EMAIL_FROM` | Required | e.g. `The Divine Tarot <hello@thedivinetarotonline.com>` (must be on the verified domain) |
-| `RESEND_FROM_EMAIL` | Required | same value (used by the daily / YouTube newsletters) |
+| `RESEND_FROM_EMAIL` | Required | sender for the YouTube "new video" broadcast, e.g. `The Divine Tarot <hello@news.thedivinetarotonline.com>` |
+| `RESEND_NEWSLETTER_SEGMENT_ID` | Optional | Resend segment that gets the newsletter. Default: the segment named "Newsletter" |
+| `DAILY_NEWSLETTER_ENABLED` | Optional | leave unset. `1` turns the site's own daily email back on (it is off because Resend sends the Mon/Wed/Fri newsletter) |
 
 **Gmail SMTP** for personal-reading confirmations (sent with calendar invite + photos). Google account → Security →
 2-Step Verification on → **App passwords** → create one.

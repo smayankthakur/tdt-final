@@ -1,3 +1,7 @@
+> **Switched off (21 Oct 2026).** The newsletter now goes out as Resend's automatic Monday / Wednesday / Friday
+> broadcasts to the Resend "Newsletter" segment; the site adds signups to that segment. `/api/newsletter/daily`
+> only runs when `DAILY_NEWSLETTER_ENABLED=1` and is no longer in `vercel.json`. See README → Newsletter.
+
 # Daily Teaser Broadcast (Email + WhatsApp)
 
 Sends a rotating Hinglish teaser message every morning — Zomato/astro-app style —

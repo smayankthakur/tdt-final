@@ -25,10 +25,6 @@
   },
   "crons": [
     {
-      "path": "/api/newsletter/daily",
-      "schedule": "0 3 * * *"
-    },
-    {
       "path": "/api/youtube/cron",
       "schedule": "0 4 * * *"
     },
