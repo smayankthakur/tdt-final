@@ -116,7 +116,22 @@ export default function LearnScripts({ openSlugOnLoad }: { openSlugOnLoad?: bool
       if (e.target === overlay) closeCourse();
     });
     on(document, 'keydown', (e) => {
-      if ((e as KeyboardEvent).key === 'Escape' && overlay?.classList.contains('open')) closeCourse();
+      const ke = e as KeyboardEvent;
+      if (!overlay?.classList.contains('open')) return;
+      if (ke.key === 'Escape') closeCourse();
+      // keep Tab inside the open pop-up
+      if (ke.key === 'Tab' && dialog) {
+        const f = [...dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')];
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (ke.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+          ke.preventDefault();
+          last.focus();
+        } else if (!ke.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+          ke.preventDefault();
+          first.focus();
+        }
+      }
     });
     if (openSlugOnLoad && overlay?.classList.contains('open')) {
       lock(true);
